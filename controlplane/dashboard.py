@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from controlplane.gate import baseline_key
+from controlplane.reasoning import looks_like_leaked_reasoning
 
 
 def _pct(values: list[float], q: float) -> float | None:
@@ -31,7 +32,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     ]
 
 
-def trace_stats(run_dir: Path) -> dict[str, Any]:
+def trace_stats(run_dir: Path, think_off: bool = False) -> dict[str, Any]:
     rows = _read_jsonl(run_dir / "traces.jsonl")
     ok = [r for r in rows if r.get("status") == "ok"]
     latencies = [r["latency_ms"] for r in ok]
@@ -44,6 +45,12 @@ def trace_stats(run_dir: Path) -> dict[str, Any]:
         "prompt_tokens": sum(r.get("prompt_tokens", 0) for r in ok),
         "completion_tokens": sum(r.get("completion_tokens", 0) for r in ok),
         "tps": statistics.median(tps) if tps else None,
+        # share of calls with reasoning in the answer; only meaningful when thinking was off
+        "leak": (
+            sum(looks_like_leaked_reasoning(r.get("output") or "") for r in ok) / len(ok)
+            if think_off and ok
+            else None
+        ),
     }
 
 
@@ -58,7 +65,7 @@ def load_latest_runs(runs_dir: Path) -> list[dict[str, Any]]:
         data["meta"].setdefault("max_tokens", 1024)  # reports written before these keys existed
         data["meta"].setdefault("guard", False)
         data["dir"] = run_dir
-        data["traces"] = trace_stats(run_dir)
+        data["traces"] = trace_stats(run_dir, think_off=data["meta"].get("think") is False)
         data["audit"] = _read_jsonl(run_dir / "audit.jsonl")
         key = f"{baseline_key(data['meta'])}__max{data['meta'].get('max_tokens')}"
         latest[key] = data  # sorted by timestamp: later overwrites
@@ -135,6 +142,7 @@ def render(runs: list[dict[str, Any]]) -> str:
                 "n/a"
                 if not meta.get("model_memory_mb")
                 else f"{meta['model_memory_mb'] / 1024:.1f} GB",
+                "-" if stats["leak"] is None else f"{stats['leak']:.0%}",
             ]
         )
         sec = task.get("security")
@@ -184,6 +192,7 @@ def render(runs: list[dict[str, Any]]) -> str:
                     "completion tok",
                     "tok/s",
                     "RSS",
+                    "leak",
                 ],
                 perf,
                 2,

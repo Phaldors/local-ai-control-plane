@@ -206,6 +206,17 @@ def summarize(cases: list[GoldenCase], outcomes: list[CaseOutcome]) -> dict:
     return tasks
 
 
+def _leak_line(meta: dict) -> str:
+    leak = meta.get("reasoning_leak") or {}
+    calls = leak.get("think_off_calls", 0)
+    if not calls:
+        return "reasoning leak: n/a (thinking not requested off)"
+    return (
+        f"reasoning leak: {leak['leaked']}/{calls} think-off calls "
+        f"({leak['leaked'] / calls:.0%}) returned reasoning in the answer"
+    )
+
+
 def _mb(value: float | None) -> str:
     return "n/a" if value is None else f"{value / 1024:.1f} GB"
 
@@ -223,6 +234,7 @@ def render_markdown(meta: dict, tasks: dict) -> str:
         f"- max_tokens: {meta['max_tokens']}, think: {meta['think']}, "
         f"guard: {meta.get('guard_mode', meta['guard'])}",
         f"- resident model memory (approx): {_mb(meta['model_memory_mb'])}",
+        f"- {_leak_line(meta)}",
         f"- commit: `{meta['commit']}`, host: {meta['host']}",
         "",
     ]
@@ -303,6 +315,10 @@ def run_eval(
         "guard_mode": guard_mode(guard),
         "case_count": len(cases),
         "model_memory_mb": runtime_memory_mb(client.runtime, model),
+        "reasoning_leak": {
+            "think_off_calls": traced.think_off_calls,
+            "leaked": traced.leaked_calls,
+        },
         "commit": _git_commit(),
         "host": f"{platform.machine()} / {platform.platform()}",
     }

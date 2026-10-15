@@ -40,6 +40,9 @@ announces actions and stops (19/29 on the agent suite), on Ollama it reasons in 
 matched configuration it is not distinguishable from gemma4. See [findings](docs/findings-runtime-confound.md); earlier
 Qwen3 conclusions are corrected there.
 
+The gate also checks that "thinking off" really is off: it measures reasoning that leaks into answers
+(0% for gemma4 and for MLX Qwen3, 73% for Qwen3 on Ollama).
+
 ## Injection follow-up
 A provenance guard mode, a mid-task injection suite and an 8-payload red-team sweep were added
 ([findings](docs/findings-injection.md)). No model attempted an injected action, so the new guard's benefit is

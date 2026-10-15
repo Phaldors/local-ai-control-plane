@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from controlplane.client import LLMClient
+from controlplane.reasoning import looks_like_leaked_reasoning
 from controlplane.redaction import redact_obj
 from controlplane.types import ChatRequest, ChatResult
 
@@ -39,6 +40,9 @@ class TracedClient:
         self._run_id = run_id
         self._tag = tag
         self.runtime = inner.runtime
+        # Calls made with thinking requested off, and how many of them leaked reasoning anyway.
+        self.think_off_calls = 0
+        self.leaked_calls = 0
 
     def chat(self, request: ChatRequest) -> ChatResult:
         base = {
@@ -66,10 +70,16 @@ class TracedClient:
                 }
             )
             raise
+        leaked = request.think is False and looks_like_leaked_reasoning(result.text)
+        if request.think is False:
+            self.think_off_calls += 1
+            self.leaked_calls += int(leaked)
         self._sink.write(
             {
                 **base,
                 "status": "ok",
+                "think": request.think,
+                "reasoning_leak": leaked,
                 "latency_ms": result.latency_ms,
                 "prompt_tokens": result.usage.prompt_tokens,
                 "completion_tokens": result.usage.completion_tokens,

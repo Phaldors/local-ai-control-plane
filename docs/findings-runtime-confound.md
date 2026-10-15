@@ -56,3 +56,30 @@ because it reasons in the content.
 ## What changes in the project
 The `think` flag is not portable across runtimes. Reports should be read together with effective completion tokens
 (mean tokens per case), which expose leaked reasoning, and a future gate rule could flag "think off but tokens high".
+
+## Follow-up: a reasoning-leak check in the gate (added the same day)
+`controlplane/reasoning.py` flags an answer that starts with a reasoning opener ("Okay, let's see. The user wants...",
+"Hmm, ...", "Let me think...") followed by first-person planning language. Every call made with thinking requested off is
+checked; counts go to the trace (`reasoning_leak`), the run metadata and the markdown report, the dashboard has a `leak`
+column, and the gate fails when more than 10% of think-off calls leak and the baseline did not (warns when the baseline
+already leaked: the flag is simply not effective for that model/runtime).
+
+Validation of the detector on all existing think-off runs (`python -m scripts.scan_reasoning_leak`):
+
+| runtime | model | think-off calls | flagged | rate |
+| --- | --- | --- | --- | --- |
+| MLX | Qwen3-30B-A3B-4bit | 638 | 0 | 0% |
+| MLX | Qwen3-8B-4bit | 768 | 0 | 0% |
+| Ollama | gemma4:26b | 1408 | 0 | 0% |
+| Ollama | qwen3:30b-a3b | 336 | 245 | 73% |
+
+For qwen3:30b-a3b the flags are 100% of calls in every tool-use suite (294 of 295 calls in the agent, security and
+injection suites, 37/37 in tool-call) and 0 in the two schema-constrained extraction suites, where the output format leaves
+no room for prose. Unit tests include normal answers that start with "Okay" (e.g. "Okay, the order is pending.") that
+must not be flagged. Live check: a fresh gemma4 tool-call run is 0/37 and passes the gate; the same suite on
+qwen3:30b-a3b is 37/37, scores 35/37 (accuracy hardly changes) and **fails** the gate with `config.reasoning_leak`
+plus latency 2242 vs 491 ms and tokens 55 -> 245. The check therefore catches a cost/label mismatch that accuracy
+alone does not show.
+
+Limits: the detector is a narrow pattern matcher (English openers); other styles of leaked reasoning, or a model
+that reasons without such openers, would be missed. It measures leakage into content, not hidden reasoning tokens.

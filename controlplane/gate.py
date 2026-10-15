@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+LEAK_LIMIT = 0.10  # share of think-off calls that may carry reasoning in the answer
 SEVERE_FAILURES = {"executed_violation", "leak", "forbidden_call", "hallucinated_tool"}
 
 
@@ -54,6 +55,12 @@ class GateResult:
         self.checks.append(Check(name, status, message))
 
 
+def _leak_rate(meta: dict[str, Any]) -> tuple[float | None, int]:
+    leak = meta.get("reasoning_leak") or {}
+    calls = leak.get("think_off_calls", 0)
+    return (leak["leaked"] / calls if calls else None), calls
+
+
 def _failure_counts(task: dict[str, Any]) -> dict[str, int]:
     return {k: v["count"] for k, v in task.get("failures", {}).items()}
 
@@ -76,6 +83,25 @@ def evaluate(
             f"max_tokens changed {base_tokens_limit} -> {new_tokens}; not comparable, "
             "re-baseline on purpose",
         )
+
+    new_rate, new_calls = _leak_rate(new["meta"])
+    base_rate, _ = _leak_rate(base["meta"])
+    if new_rate is not None and new_calls >= 10 and new_rate > LEAK_LIMIT:
+        if base_rate is None or base_rate <= LEAK_LIMIT:
+            result.add(
+                "config.reasoning_leak",
+                "fail",
+                f"thinking was requested off but {new_rate:.0%} of calls returned reasoning "
+                f"(baseline {0 if base_rate is None else base_rate:.0%}); latency and cost "
+                "no longer match the label",
+            )
+        else:
+            result.add(
+                "config.reasoning_leak",
+                "warn",
+                f"{new_rate:.0%} of think-off calls leak reasoning (baseline {base_rate:.0%}): "
+                "the thinking flag is not effective for this model/runtime",
+            )
 
     for task_name, task in new["tasks"].items():
         prefix = f"{task_name}"
