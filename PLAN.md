@@ -1,40 +1,35 @@
 ---
 title: Local AI Control Plane Plan
 created: 2026-10-15
-modified: 2026-10-15
+modified: 2026-10-16
 type: project
 status: active
-tags: [project, local-llm, ollama, mlx, eval, routing, llmops]
+tags: [project, local-llm, ollama, mlx, eval, security, llmops]
 ---
 
-# Local AI Control Plane
+# Local AI Control Plane: status
 
-Ollama ve MLX-LM üstünde birden fazla yerel modeli servis eden, ölçen ve
-(ölçüm gerekçelendirirse) route eden katman. Hedef soru: "Hassas veriyi dışarı
-çıkarmadan hangi görevi hangi yerel model, hangi güvenle yapabilir?"
-
-## Sınırlar (Arda'nın kararı)
-- Ollama + MLX-LM ortak `LLMClient` arkasında.
-- İlk hedef router/dashboard DEĞİL: trace'li iki runtime + golden eval sözleşmesi.
-- Tool-call başarısızlıkları gizlenmez, eval raporuna bulgu olarak girer.
-- Router, ancak ölçüm sonuçlarıyla gerekçelendirilirse başlar.
+Goal: measure local LLMs the way you would before trusting them with private data, with the policy in code.
+Constraints set by Arda: Ollama and MLX-LM behind one `LLMClient`; failures are findings, not hidden; a router only
+if measurements justify it.
 
 ## Milestones
-- [x] M1a `LLMClient` protokolü, Ollama runtime, JSONL trace, golden eval sözleşmesi, hata taksonomisi
-- [x] M1b Golden setler: extraction (CORD validation, 50) + tool_call (25, no-tool vakaları dahil)
-- [x] M1c MLX runtime: gerçek `mlx_lm.server` koşusu doğrulandı (Qwen3-8B, Qwen3-30B-A3B)
-- [x] M2 Ölçüm: 3 model x iki runtime, golden v2, thinking açık/kapalı (docs/findings-m2.md)
-- [x] M3 Karar: router gerekçelendirilmiyor (extraction'da en ucuz konfigürasyon en iyisi). Revisit koşulları findings-m2.md sonunda
-- [x] M3b Daha zor görev (çok fişli extraction, 2-16 fiş): güçlü modeller doygun, router yine gerekçelendirilmedi (docs/findings-m3.md)
-- [x] M3c Çok adımlı tool-use (agent suite, 29 vaka): gemma4 28/29, Qwen3 18-23/29, yasak iade ve injection ölçüldü; router yine gerekçelendirilmedi (docs/findings-m4.md)
-- [x] M8 Köken (provenance) guard modu + zor injection suite + keşifsel red-team: hiçbir model saldırıyı denemedi, guard faydası ölçülemedi (docs/findings-injection.md); `agent_injection` test split'i bilerek harcanmadı
-- [ ] M4 (koşullu, şimdilik askıda) Router: görev tipi + güvene göre kademeli yönlendirme
-- [x] M5 Güvenlik: politika guard'ı, PII redaction, audit, escalation, 21 vakalık güvenlik suite'i; guard kapalı/açık ölçüldü (docs/findings-m5.md)
-- [x] M6 Yönetişim: regression gate (baseline'lar commit'li), tek sayfalık panel, audit özeti (docs/findings-m6.md)
-- [x] M7a Final: test split'te tek seferlik koşu, önceden yazılmış beklentiler, rapor (docs/final-report.md)
-- [ ] M7b CV satırları ve LinkedIn proje metni
+- [x] M1 `LLMClient`, Ollama and MLX runtimes, JSONL trace, golden contract, failure taxonomy
+- [x] M2 three models, audited labels (golden v2), thinking on/off
+- [x] M3 router decision: not justified (re-checked on multi-receipt and multi-step tool use)
+- [x] M5 security: policy guard, PII redaction, audit, escalation, independent oracle
+- [x] M6 governance: regression gate with committed baselines, dashboard, audit summary
+- [x] M7a final: one-shot test-split run with pre-registered expectations
+- [x] M8 provenance guard mode, mid-task injection suite, red-team sweep (null result)
+- [x] Runtime/checkpoint confound: retracted claim corrected, same-checkpoint comparison, leak check in the gate
+- [ ] M7b CV and LinkedIn wording: on hold until Arda asks
+- [ ] M4 router: deliberately not built
 
-## İlkeler
-- validation ile ayar, test split yalnızca final dondurulmuş raporda.
-- Ölçüm bug'ı ile model bug'ını ayır (DocuGuard dersleri).
-- Her koşu: runtime, model, think/max_tokens, commit, host kayıtlı.
+## Open, optional
+- Run the original hybrid Qwen3-30B-A3B on Ollama (`qwen3:30b-a3b-q4_K_M`, 18.6 GB download) to separate reasoning from
+  checkpoint; qwen3:8b check; API baseline (gpt-5-mini, key via `.env`); a successful injection to make the
+  provenance guard measurable; spend the `agent_injection` test split once such an attack exists.
+
+## Rules kept
+Tune on validation only; test split is one-shot per configuration; compare model and runtime only after checking
+checkpoint metadata; report scale (n) with every number.
