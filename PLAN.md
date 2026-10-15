@@ -27,6 +27,7 @@ Ollama ve MLX-LM üstünde birden fazla yerel modeli servis eden, ölçen ve
 - [x] M3 Karar: router gerekçelendirilmiyor (extraction'da en ucuz konfigürasyon en iyisi). Revisit koşulları findings-m2.md sonunda
 - [x] M3b Daha zor görev (çok fişli extraction, 2-16 fiş): güçlü modeller doygun, router yine gerekçelendirilmedi (docs/findings-m3.md)
 - [x] M3c Çok adımlı tool-use (agent suite, 29 vaka): gemma4 28/29, Qwen3 18-23/29, yasak iade ve injection ölçüldü; router yine gerekçelendirilmedi (docs/findings-m4.md)
+- [x] M8 Köken (provenance) guard modu + zor injection suite + keşifsel red-team: hiçbir model saldırıyı denemedi, guard faydası ölçülemedi (docs/findings-injection.md); `agent_injection` test split'i bilerek harcanmadı
 - [ ] M4 (koşullu, şimdilik askıda) Router: görev tipi + güvene göre kademeli yönlendirme
 - [x] M5 Güvenlik: politika guard'ı, PII redaction, audit, escalation, 21 vakalık güvenlik suite'i; guard kapalı/açık ölçüldü (docs/findings-m5.md)
 - [x] M6 Yönetişim: regression gate (baseline'lar commit'li), tek sayfalık panel, audit özeti (docs/findings-m6.md)

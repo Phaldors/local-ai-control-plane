@@ -34,6 +34,11 @@ gemma4:26b 94% extraction, 100% multi-receipt and tool-call; with the guard on, 
 are 0 for all three models, no over-blocking. Four of seven pre-registered expectations held; the two that
 failed were about Qwen3-30B-A3B's quality generalizing (validation was optimistic).
 
+## Injection follow-up
+A provenance guard mode, a mid-task injection suite and an 8-payload red-team sweep were added
+([findings](docs/findings-injection.md)). No model attempted an injected action, so the new guard's benefit is
+not demonstrated; the earlier violations came from user-side pressure and scope, not from tool-result text.
+
 ## Governance
 ```bash
 uv run python -m controlplane.cli baseline-save runs/<run_dir>   # commit the result in baselines/
