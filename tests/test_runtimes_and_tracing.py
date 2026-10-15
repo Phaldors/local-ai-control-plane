@@ -184,3 +184,23 @@ def test_run_eval_counts_transport_errors_as_failures_not_crashes(tmp_path):
     )
     report = json.loads((run_dir / "report.json").read_text())
     assert report["tasks"]["extraction"]["failures"]["transport_error"]["count"] == 1
+
+
+def test_soft_no_think_uses_the_system_prompt_switch_not_the_api_flag():
+    seen = {}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(req.content)
+        return httpx.Response(200, json={"message": {"content": "{}"}})
+
+    client = OllamaClient(transport=httpx.MockTransport(handler), soft_no_think=True)
+    assert client.runtime == "ollama-nothink"
+    messages = [Message(role="system", content="You help."), Message(role="user", content="hi")]
+    client.chat(ChatRequest(model="m", messages=messages, think=False))
+    assert "think" not in seen["body"]
+    assert seen["body"]["messages"][0]["content"].endswith("\n/no_think")
+    # without a system message one is added; thinking not requested off leaves the prompt alone
+    client.chat(ChatRequest(model="m", messages=[Message(role="user", content="hi")], think=False))
+    assert seen["body"]["messages"][0] == {"role": "system", "content": "/no_think"}
+    client.chat(ChatRequest(model="m", messages=messages, think=None))
+    assert "/no_think" not in seen["body"]["messages"][0]["content"]

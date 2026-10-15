@@ -23,6 +23,8 @@ SUITES = {
 def build_client(runtime: str, base_url: str | None) -> LLMClient:
     if runtime == "ollama":
         return OllamaClient(base_url=base_url or "http://localhost:11434")
+    if runtime == "ollama-nothink":
+        return OllamaClient(base_url=base_url or "http://localhost:11434", soft_no_think=True)
     if runtime == "mlx":
         return MLXClient(base_url=base_url or "http://localhost:8080")
     raise SystemExit(f"unknown runtime: {runtime}")
@@ -83,7 +85,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="controlplane")
     sub = parser.add_subparsers(dest="command", required=True)
     ev = sub.add_parser("eval", help="run a golden suite against one runtime/model")
-    ev.add_argument("--runtime", choices=["ollama", "mlx"], required=True)
+    ev.add_argument("--runtime", choices=["ollama", "ollama-nothink", "mlx"], required=True)
     ev.add_argument("--model", required=True)
     ev.add_argument("--suite", choices=[*SUITES, "all"], default="all")
     ev.add_argument("--split", choices=["validation", "test"], default="validation")

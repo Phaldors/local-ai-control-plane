@@ -16,21 +16,38 @@ def _message(message: Message) -> dict:
     return out
 
 
+def _with_no_think(messages: list[dict]) -> list[dict]:
+    out = [dict(m) for m in messages]
+    for message in out:
+        if message["role"] == "system":
+            message["content"] = f"{message['content']}\n/no_think"
+            return out
+    return [{"role": "system", "content": "/no_think"}, *out]
+
+
 class OllamaClient:
-    runtime = "ollama"
+    """`soft_no_think=True` turns reasoning off the way Qwen3 documents it, with a "/no_think"
+    switch in the system prompt, instead of the API's `think` flag (which leaks reasoning into the
+    content for qwen3:30b-a3b). It is reported as the separate runtime "ollama-nothink"."""
 
     def __init__(
         self,
         base_url: str = "http://localhost:11434",
         timeout_s: float = 300.0,
         transport: httpx.BaseTransport | None = None,
+        soft_no_think: bool = False,
     ):
+        self.soft_no_think = soft_no_think
+        self.runtime = "ollama-nothink" if soft_no_think else "ollama"
         self._http = httpx.Client(base_url=base_url, timeout=timeout_s, transport=transport)
 
     def chat(self, request: ChatRequest) -> ChatResult:
+        messages = [_message(m) for m in request.messages]
+        if self.soft_no_think and request.think is False:
+            messages = _with_no_think(messages)
         body: dict = {
             "model": request.model,
-            "messages": [_message(m) for m in request.messages],
+            "messages": messages,
             "stream": False,
             "options": {
                 "temperature": request.temperature,
@@ -38,7 +55,7 @@ class OllamaClient:
                 "num_predict": request.max_tokens,
             },
         }
-        if request.think is not None:
+        if request.think is not None and not self.soft_no_think:
             body["think"] = request.think
         if request.response_schema is not None:
             body["format"] = request.response_schema
