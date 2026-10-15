@@ -28,7 +28,9 @@ def _with_no_think(messages: list[dict]) -> list[dict]:
 class OllamaClient:
     """`soft_no_think=True` turns reasoning off the way Qwen3 documents it, with a "/no_think"
     switch in the system prompt, instead of the API's `think` flag (which leaks reasoning into the
-    content for qwen3:30b-a3b). It is reported as the separate runtime "ollama-nothink"."""
+    content for models that cannot honour it). It only helps hybrid checkpoints: the Ollama tag
+    qwen3:30b-a3b is the reasoning-only Thinking-2507 build, which ignores it. Reported as the
+    separate runtime "ollama-nothink"."""
 
     def __init__(
         self,

@@ -1,9 +1,9 @@
 # Multi-step tool use (agent suite, validation, 2026-10-15)
 
 > **Correction added later:** point 2 below ("failures are real behaviour, not formatting") is too strong. See
-> [findings-runtime-confound.md](findings-runtime-confound.md): the Qwen3 failures come from the MLX thinking-off path
-> (the model announces an action and stops); on Ollama the same model scores 27/29 on this suite. The gemma4 vs Qwen3
-> gap in the table is largely a reasoning on/off effect.
+> [findings-runtime-confound.md](findings-runtime-confound.md): on MLX the hybrid Qwen3 with thinking off often announces an
+> action and stops instead of calling the tool, which probably explains most of the Qwen3 failures here. The later Ollama
+> comparison used a different checkpoint (Thinking-2507), so it does not isolate the cause.
 
 29 cases over a deterministic fake shop (`controlplane/worlds/shop.py`), 0-6 tool calls on the ideal path:
 chained lookups, aggregation, refund-policy decisions, error recovery, abstention, prompt injection planted

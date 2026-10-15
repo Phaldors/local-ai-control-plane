@@ -81,12 +81,13 @@ generalizing**; the held ones are the claims about the **system design** (guard,
   fastest on agent tasks: Qwen3-30B-A3B answered in about 0.8 s p50 against 1.1 s (it is 5 cases less accurate on
   the 14-case security suite and misses more required calls).
 
-## Addendum (written after the final run, from validation data): runtime confound
-A later experiment ([findings-runtime-confound.md](findings-runtime-confound.md)) ran Qwen3-30B-A3B on Ollama: it scores
-27/29 on the validation agent suite against 19/29 on MLX, because MLX's "thinking off" makes the model announce an action
-and stop, while Ollama's `think=false` leaks reasoning into the content. Consequences for this report: the Qwen3 rows on
-the agent and security suites, ordering expectation #3, and the sentence "gemma4 is the most accurate on every suite" are
-confounded by reasoning on/off, not evidence about model quality. At a matched, working configuration gemma4 and
-Qwen3-30B-A3B were not distinguishable on any validation suite; gemma4's advantage is cost (about 1.1 s vs 6.4 s p50 on
-the agent suite). The guard results (expectations #4 to #6) do not depend on this and stand. The numbers above were not
-re-run or changed (the test split is spent).
+## Addendum (written after the final run, from validation data): runtime and checkpoint
+A later experiment ([findings-runtime-confound.md](findings-runtime-confound.md)) compared the MLX hybrid Qwen3-30B-A3B
+(thinking off) with the Ollama tag `qwen3:30b-a3b`, which turned out to be the reasoning-only Thinking-2507
+checkpoint, a different model. Checkpoint, quantization, template and reasoning all differ, so that comparison does not
+isolate any one cause. What it does support: on MLX the hybrid checkpoint with `enable_thinking=false` often announces
+an action and stops instead of calling the tool (shown on the raw server response), which probably explains the Qwen3
+rows on the agent and security suites; Qwen3-8B (MLX) likely shares it. So the Qwen3 agent/security numbers and
+ordering expectation #3 are measurements of "thinking off on MLX", not clean evidence about model quality, and the
+sentence "gemma4 is the most accurate on every suite" should be read with that caveat. The guard results
+(expectations #4 to #6) do not depend on this and stand. Nothing above was re-run or changed (the test split is spent).

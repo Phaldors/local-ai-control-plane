@@ -1,13 +1,20 @@
-# Separating model from runtime: Qwen3-30B-A3B on Ollama vs MLX (validation, 2026-10-15)
+# Qwen3-30B-A3B on Ollama vs MLX: what the comparison does and does not show (2026-10-15)
 
-Since M4 the comparison "gemma4 (Ollama) vs Qwen3 (MLX)" mixed model and runtime. To separate them,
-`qwen3:30b-a3b` (Ollama default build, GGUF Q4_K_M, 18.6 GB, pulled with approval) was run on the validation
-suites with thinking requested off, and compared with the earlier MLX 4-bit runs of the same model.
-Reports and trajectories: `docs/eval-reports/runtime-confound/`. Paired comparison: `scripts/compare_runs.py`.
-The test split is not used (it was spent in the final run).
+> **Correction made later the same day.** This page first claimed "same model, two runtimes". That was wrong.
+> The Ollama tag `qwen3:30b-a3b` is **Qwen3-30B-A3B-Thinking-2507** (metadata: `general.finetune: Thinking`,
+> version 2507, context 262,144, a reasoning-only checkpoint whose template has no off switch). The MLX model
+> `mlx-community/Qwen3-30B-A3B-4bit` is the **original hybrid** Qwen3-30B-A3B (context 40,960, chat template with
+> `enable_thinking`). The two runs differ in checkpoint, quantization (GGUF Q4_K_M vs MLX 4-bit), chat template and
+> reasoning, all at once. Claims that need one variable changed at a time are withdrawn below.
 
-## Result 1: tool-use suites differ a lot between the two runtimes; single-turn suites do not
-| suite | MLX 4-bit | Ollama Q4_K_M | discordant pairs (MLX-only / Ollama-only) | sign-test p |
+Reports and trajectories: `docs/eval-reports/runtime-confound/` (the Ollama runs). Paired comparison:
+`scripts/compare_runs.py`. Validation split only (the test split was spent in the final run).
+
+## What was compared
+Hybrid Qwen3-30B-A3B on MLX with thinking off (earlier runs) against Qwen3-30B-A3B-Thinking-2507 on Ollama with
+`think=false` requested.
+
+| suite | MLX hybrid, thinking off | Ollama Thinking-2507 | discordant pairs (MLX-only / Ollama-only) | sign-test p |
 | --- | --- | --- | --- | --- |
 | agent (29) | 19/29 | **27/29** | 1 / 9 | 0.02 |
 | agent_security, guard off (21) | 11/21 | **17/21** | 0 / 6 | 0.03 |
@@ -16,70 +23,55 @@ The test split is not used (it was spent in the final run).
 | extraction (50) | 50/50 | 47/50 | 3 / 0 | 0.25 |
 | multi_extraction (40) | 40/40 | 39/40 | 1 / 0 | 1.00 |
 
-## Result 2: the cause is what "thinking off" does, not the runtime's quality
-Latency and tokens for the same model (thinking requested off): agent suite p50 **1.1 s / 71 tokens** on MLX vs
-**6.4 s / 802 tokens** on Ollama; tool_call 0.4 s / 30 tokens vs 2.1 s / 245 tokens. Direct checks on one prompt
-("Please refund order O-1006 in full."):
-- **MLX, `enable_thinking=false`:** the raw server response is plain text, `finish_reason: stop`, no tool call:
-  "I will issue a full refund for order O-1006. Let me process that for you." The model announces the action and
-  stops. This is exactly the failure seen across the MLX agent trajectories (price invented without
-  `get_product`, "I will process the refund, let me retrieve the order", asking for facts it could look up).
-  Without that flag the same server returns a correct `get_order` tool call (reasoning on).
-- **Ollama, `think=false` on `qwen3:30b-a3b`:** reasoning is **not** suppressed. It leaks into the visible content
-  ("Okay, let's see. The user wants a refund for order O-1006...", 227 tokens) and the call is then made
-  correctly. gemma4 with the same flag answers in 22 tokens with the call and no reasoning.
-So "thinking off" means truly off on MLX and "reasoning leaked into content" on Ollama for this model. The
-27/29 vs 19/29 gap is **reasoning on vs off for tool use**, not a runtime-quality difference.
+The two tool-use suites differ significantly. Cost differs too: agent suite p50 1.1 s and 71 tokens per case on MLX,
+6.4 s and 802 tokens on Ollama.
 
-## Result 3: on the same runtime, gemma4 and Qwen3-30B-A3B are not distinguishable
-Both on Ollama, thinking requested off, paired on identical cases: agent 28 vs 27, security 17 vs 17, injection 10 vs 8,
-tool_call 36 vs 35, extraction 49 vs 47, multi-receipt 40 vs 39; every sign-test p >= 0.5. What differs is
-cost: gemma4 reaches 28/29 on the agent suite at p50 1.1 s with no reasoning, Qwen3-30B-A3B reaches 27/29 at p50 6.4 s
-because it reasons in the content.
+## What is supported
+1. **On MLX, the hybrid checkpoint with `enable_thinking=false` fails at tool use in a recognisable way.** The raw
+   server response to "Please refund order O-1006 in full." is plain text with `finish_reason: stop` and no tool call
+   ("I will issue a full refund for order O-1006. Let me process that for you."): the model announces the action and
+   stops. The same server without the flag returns a correct `get_order` call. This matches the MLX agent
+   trajectories (price invented without `get_product`, "let me retrieve the order" and nothing else). This
+   observation concerns the hybrid checkpoint under that template path.
+2. **On Ollama, the Thinking-2507 checkpoint reasons whatever `think` says.** With `think=false` the reasoning is
+   returned as visible content ("Okay, let's see. The user wants a refund...", 227 tokens); with `think=true` it is in
+   the `thinking` field. gemma4 on the same server honours the flag (22 tokens, no reasoning). Adding Qwen3's
+   `/no_think` soft switch (the `ollama-nothink` runtime variant) did not change that: 294 and 244 tokens on two
+   test prompts, because this checkpoint has no such switch.
+3. **At matched reasoning behaviour on one runtime, gemma4 and the Thinking-2507 checkpoint are not distinguishable**
+   (both on Ollama, paired on identical cases: agent 28 vs 27, security 17 vs 17, injection 10 vs 8, tool_call 36 vs 35,
+   extraction 49 vs 47, multi-receipt 40 vs 39; every sign-test p >= 0.5). gemma4 gets there at p50 1.1 s without
+   reasoning against 6.4 s for the reasoning-only checkpoint.
 
-## Corrections to earlier conclusions
-- **M4 (`findings-m4.md`):** "failures are real behaviour, not formatting" was too strong. They are real model outputs,
-  but produced under the MLX thinking-off template path that makes Qwen3 announce an action and stop.
-- **Final report:** the Qwen3 rows on the agent and security suites (and the claim that gemma4 is the most accurate on
-  every suite) are confounded by this effect; at a matched, working configuration the two models are not
-  distinguishable on these suites. The pre-registered numbers are unchanged and were not re-run.
-- **Qwen3-8B** (MLX only) very likely shares the artifact; it was not re-run (no `qwen3:8b` pulled).
-- The router conclusion is unaffected: a cheaper tier that works would still need to beat gemma4 on cost, and the
-  only cheap Qwen3 configuration (thinking truly off) fails tool use.
+## What is withdrawn
+- "Same model on two runtimes", and therefore "the gap is not a runtime-quality difference" and "the `think` flag is not
+  portable": none of these can be concluded, because the checkpoint changed. (The flag did work for the hybrid on MLX
+  and does work for gemma4 on Ollama; it cannot work for a checkpoint that always reasons.)
+- The earlier statement that the MLX/Ollama gap isolates reasoning on/off. It mixes checkpoint, reasoning,
+  quantization and template.
+
+## Consequences for earlier documents
+- **Final report / M4:** the Qwen3 rows (MLX, hybrid, thinking off) stand as measurements of that configuration. Their
+  weakness on tool use is tied to the MLX thinking-off path for the hybrid checkpoint (point 1), not shown to be a
+  property of Qwen3-30B-A3B in general. The pre-registered numbers are unchanged. Qwen3-8B (MLX) very likely shares
+  the thinking-off tool-use failure and was not re-run.
+- The router conclusion is unaffected.
+
+## How to separate the variables (not done)
+Run the same checkpoint on both runtimes: `mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit` on MLX (reasoning always on)
+against the Ollama tag, or the original hybrid on Ollama (`ollama pull` of a hybrid tag) against the MLX hybrid, in
+both cases with reasoning set the same way. Each needs a model download.
+
+## The leak detector (still valid)
+`controlplane/reasoning.py` flags an answer that starts with a reasoning opener followed by first-person planning
+language. Counts go to traces, run metadata, the report and a dashboard column, and the gate fails when more than 10%
+of think-off calls leak and the baseline did not. On all think-off runs in `runs/`: MLX Qwen3-30B 0/638, MLX Qwen3-8B
+0/768, Ollama gemma4 0/1445, Ollama Thinking-2507 282/373 (76%; 282 of 283 calls in the tool-use suites, 0 of 90 in the
+schema-constrained extraction suites). Live check: a fresh gemma4 tool-call run is 0/37 and passes the gate; the same
+suite on the Thinking-2507 checkpoint is 37/37, scores 35/37, and fails the gate (`config.reasoning_leak`, latency
+2242 vs 491 ms, tokens 55 -> 245), so it catches a cost/label mismatch that accuracy does not show. The detector
+measures leakage into content with English openers only. Its real finding here is that a reasoning-only checkpoint
+ignores "thinking off"; it works as designed, on a different cause than first reported.
 
 ## Limits
-- Quantization differs (MLX 4-bit vs GGUF Q4_K_M), as do chat templates and tool-call parsers; this experiment
-  separates "reasoning on/off" from nothing else cleanly. A third configuration (Ollama with reasoning really off, or
-  MLX with reasoning on at a bounded budget) would be needed to isolate the template from the quantization.
-- n=10 to 50, single runs, validation only; p-values come from a sign test on discordant pairs with little power.
-
-## What changes in the project
-The `think` flag is not portable across runtimes. Reports should be read together with effective completion tokens
-(mean tokens per case), which expose leaked reasoning, and a future gate rule could flag "think off but tokens high".
-
-## Follow-up: a reasoning-leak check in the gate (added the same day)
-`controlplane/reasoning.py` flags an answer that starts with a reasoning opener ("Okay, let's see. The user wants...",
-"Hmm, ...", "Let me think...") followed by first-person planning language. Every call made with thinking requested off is
-checked; counts go to the trace (`reasoning_leak`), the run metadata and the markdown report, the dashboard has a `leak`
-column, and the gate fails when more than 10% of think-off calls leak and the baseline did not (warns when the baseline
-already leaked: the flag is simply not effective for that model/runtime).
-
-Validation of the detector on all think-off runs in `runs/` (`python -m scripts.scan_reasoning_leak`):
-
-| runtime | model | think-off calls | flagged | rate |
-| --- | --- | --- | --- | --- |
-| MLX | Qwen3-30B-A3B-4bit | 638 | 0 | 0% |
-| MLX | Qwen3-8B-4bit | 768 | 0 | 0% |
-| Ollama | gemma4:26b | 1445 | 0 | 0% |
-| Ollama | qwen3:30b-a3b | 373 | 282 | 76% |
-
-For qwen3:30b-a3b the flags cover 282 of 283 calls in the tool-use suites (agent, security, injection, tool-call)
-and 0 of 90 in the two schema-constrained extraction suites, where the output format leaves no room for prose. The
-counts include the two live-check runs below. Unit tests include normal answers that start with "Okay" (e.g. "Okay, the order is pending.") that
-must not be flagged. Live check: a fresh gemma4 tool-call run is 0/37 and passes the gate; the same suite on
-qwen3:30b-a3b is 37/37, scores 35/37 (accuracy hardly changes) and **fails** the gate with `config.reasoning_leak`
-plus latency 2242 vs 491 ms and tokens 55 -> 245. The check therefore catches a cost/label mismatch that accuracy
-alone does not show.
-
-Limits: the detector is a narrow pattern matcher (English openers); other styles of leaked reasoning, or a model
-that reasons without such openers, would be missed. It measures leakage into content, not hidden reasoning tokens.
+n=10 to 50, single runs, validation only; sign tests on discordant pairs have little power.

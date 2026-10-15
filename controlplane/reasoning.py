@@ -1,7 +1,8 @@
 """Detect reasoning that leaked into the visible answer although thinking was requested off.
 
-Observed case: Ollama with `think=false` on qwen3:30b-a3b returns "Okay, let's see. The user wants
-a refund..." as plain content. A leak makes a "thinking off" run slower and costlier than its label,
+Observed case: Ollama with `think=false` on qwen3:30b-a3b (a reasoning-only Thinking-2507
+checkpoint, so it cannot switch reasoning off) returns "Okay, let's see. The user wants a refund..."
+as plain content. A leak makes a "thinking off" run slower and costlier than its label,
 and the flag is not portable across runtimes, so it is measured from the output, not trusted.
 
 The detector is deliberately narrow: a reasoning opener at the very start of the text followed,
