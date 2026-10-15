@@ -1,5 +1,6 @@
 import json
 import re
+import unicodedata
 from typing import Any
 
 from jsonschema import Draft202012Validator
@@ -15,8 +16,8 @@ def _norm(value: Any) -> Any:
         return value
     if isinstance(value, int | float):
         return float(value)
-    text = str(value).strip().casefold()
-    return text
+    decomposed = unicodedata.normalize("NFKD", str(value).strip().casefold())
+    return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
 
 
 def _norm_amount(value: Any) -> str | None:

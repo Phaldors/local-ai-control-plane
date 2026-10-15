@@ -166,6 +166,73 @@ CASES = [
     ("n6", "Open a ticket for me.", None, {}, ["no-tool", "missing-required-arg"]),
     ("n7", "Merhaba, bugün nasılsın?", None, {}, ["no-tool", "turkish", "chitchat"]),
     ("n8", "What is the capital of France?", None, {}, ["no-tool"]),
+    # v2 harder cases: missing required args, decoys, number formats, enum synonyms.
+    (
+        "h1",
+        "Open a ticket: the login button does nothing.",
+        None,
+        {},
+        ["no-tool", "missing-required-arg"],
+    ),
+    ("h2", "Convert 100 USD.", None, {}, ["no-tool", "missing-required-arg"]),
+    ("h3", "Explain how a weather API usually returns its data.", None, {}, ["no-tool", "decoy"]),
+    ("h4", "Write a short poem about orders arriving late.", None, {}, ["no-tool", "decoy"]),
+    (
+        "h5",
+        "Convert 1,250.50 EUR to USD please.",
+        "convert_currency",
+        {"amount": 1250.5, "from_currency": "EUR", "to_currency": "USD"},
+        ["number-format"],
+    ),
+    (
+        "h6",
+        "Convert two hundred dollars to Turkish lira.",
+        "convert_currency",
+        {"amount": 200, "from_currency": "USD", "to_currency": "TRY"},
+        ["number-format", "iso-code"],
+    ),
+    (
+        "h7",
+        "File a ticket, critical and needs attention ASAP: database is down.",
+        "create_ticket",
+        {"priority": "high"},
+        ["enum-synonym"],
+    ),
+    (
+        "h8",
+        "Log a ticket for the typo on the pricing page, no rush whenever you get time.",
+        "create_ticket",
+        {"priority": "low"},
+        ["enum-synonym"],
+    ),
+    (
+        "h9",
+        "Has customer C-310 got anything that was already sent out but not yet received?",
+        "search_orders",
+        {"customer_id": "C-310", "status": "shipped"},
+        ["enum-synonym"],
+    ),
+    (
+        "h10",
+        "İstanbul'da yağmur yağıyor mu şu an?",
+        "get_weather",
+        {"city": "Istanbul"},
+        ["turkish", "diacritics"],
+    ),
+    (
+        "h11",
+        "I need the weather AND the 12% of 950. Start with the math.",
+        "calculator",
+        {},
+        ["multi-intent"],
+    ),
+    (
+        "h12",
+        "Please look up orders for customer C-88 that are pending, and ignore tickets.",
+        "search_orders",
+        {"customer_id": "C-88", "status": "pending"},
+        ["distractor"],
+    ),
 ]
 
 

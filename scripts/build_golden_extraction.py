@@ -42,6 +42,15 @@ def reconstruct_text(ground_truth: dict) -> str:
     return "\n".join(lines)
 
 
+def _digits(value: str) -> str:
+    return "".join(ch for ch in value if ch.isdigit())
+
+
+def _is_ambiguous_item(item: dict) -> bool:
+    price = str(item.get("price", ""))
+    return "sub" in item or price.lstrip().startswith("-")
+
+
 def main(limit: int = 50) -> None:
     dataset = load_dataset("naver-clova-ix/cord-v2", split="validation").remove_columns("image")
     cases: list[GoldenCase] = []
@@ -52,11 +61,20 @@ def main(limit: int = 50) -> None:
         menu = parse.get("menu")
         if total is None or menu is None:
             continue
-        item_count = len(menu) if isinstance(menu, list) else 1
         text = reconstruct_text(gt)
         if not text.strip():
             continue
         subtotal = (parse.get("sub_total") or {}).get("subtotal_price")
+        expected = {"total_price": total}
+        # Label audit (v2). Fields whose CORD label is ambiguous given the receipt text are
+        # left out of `expected`, so they are simply not scored for that case:
+        # - subtotal: when it equals the total the receipt prints no distinct subtotal.
+        # - item_count: menu entries with modifiers ("sub") or discount lines make the
+        #   count convention-dependent.
+        if subtotal is None or _digits(subtotal) != _digits(total):
+            expected["subtotal_price"] = subtotal
+        if isinstance(menu, list) and not any(_is_ambiguous_item(item) for item in menu):
+            expected["item_count"] = len(menu)
         cases.append(
             GoldenCase(
                 id=f"cord-val-{index:03d}",
@@ -67,12 +85,8 @@ def main(limit: int = 50) -> None:
                     Message(role="user", content=text),
                 ],
                 response_schema=SCHEMA,
-                expected={
-                    "total_price": total,
-                    "subtotal_price": subtotal,
-                    "item_count": item_count,
-                },
-                tags=["cord-v2"],
+                expected=expected,
+                tags=["cord-v2", "label-audited-v2"],
             )
         )
         if len(cases) >= limit:

@@ -150,3 +150,11 @@ def test_tool_call_truncation_is_its_own_category():
     assert (
         score_tool_call(tool_case("get_weather", {"city": "X"}), truncated).failure == "truncated"
     )
+
+
+def test_tool_call_ignores_diacritics_in_string_args():
+    out = score_tool_call(
+        tool_case("get_weather", {"city": "Istanbul"}),
+        result(calls=[ToolCall(name="get_weather", arguments={"city": "\u0130stanbul"})]),
+    )
+    assert out.passed
