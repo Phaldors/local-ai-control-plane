@@ -62,14 +62,16 @@ def load_latest_runs(runs_dir: Path) -> list[dict[str, Any]]:
         data["audit"] = _read_jsonl(run_dir / "audit.jsonl")
         key = f"{baseline_key(data['meta'])}__max{data['meta'].get('max_tokens')}"
         latest[key] = data  # sorted by timestamp: later overwrites
+
     # Hide smoke runs (--limit) and runs on an older, smaller golden set: only runs that cover
-    # the largest case count seen for their suite are comparable.
-    biggest: dict[str, int] = defaultdict(int)
+    # the largest case count seen for their suite and split are comparable.
+    def group(run: dict[str, Any]) -> tuple[str, str]:
+        return run["meta"]["suite"], run["meta"].get("split", "validation")
+
+    biggest: dict[tuple[str, str], int] = defaultdict(int)
     for run in latest.values():
-        biggest[run["meta"]["suite"]] = max(
-            biggest[run["meta"]["suite"]], run["meta"]["case_count"]
-        )
-    kept = [r for r in latest.values() if r["meta"]["case_count"] == biggest[r["meta"]["suite"]]]
+        biggest[group(run)] = max(biggest[group(run)], run["meta"]["case_count"])
+    kept = [r for r in latest.values() if r["meta"]["case_count"] == biggest[group(r)]]
     return sorted(kept, key=lambda d: (d["meta"]["model"], d["meta"]["suite"]))
 
 

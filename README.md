@@ -4,7 +4,7 @@ Measure local LLMs the way you would before trusting them with private data.
 One `LLMClient` interface in front of **Ollama** and **MLX-LM**, every call traced,
 and a golden eval contract that reports failures instead of hiding them.
 
-Status: **M1-M6 done** (two runtimes, tracing, five golden suites, agent loop with trajectory scoring,
+Status: **M1-M6 done, final test-split run done** (two runtimes, tracing, five golden suites, agent loop with trajectory scoring,
 security guard with PII redaction, audit log and human escalation). Router, safety layer and
 dashboard are deliberately not started: the router only gets built if the measurements justify it.
 
@@ -27,6 +27,12 @@ uv run python -m controlplane.cli eval --runtime ollama --model gemma4:26b --sui
 uv run mlx_lm.server --model mlx-community/Qwen3-8B-4bit --port 8080
 uv run python -m controlplane.cli eval --runtime mlx --model mlx-community/Qwen3-8B-4bit --suite all
 ```
+
+## Final result
+One-shot test-split run, 21 runs, expectations written beforehand ([final-report.md](docs/final-report.md)):
+gemma4:26b 94% extraction, 100% multi-receipt and tool-call; with the guard on, executed violations and leaks
+are 0 for all three models, no over-blocking. Four of seven pre-registered expectations held; the two that
+failed were about Qwen3-30B-A3B's quality generalizing (validation was optimistic).
 
 ## Governance
 ```bash

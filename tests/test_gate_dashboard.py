@@ -217,3 +217,11 @@ def test_test_split_is_one_shot_per_configuration(tmp_path):
     assert (
         test_run_exists(tmp_path, "mlx", "gemma4:26b", "agent_security", False, False, 1024) is None
     )
+
+
+def test_dashboard_size_filter_is_applied_per_split(tmp_path):
+    write_run(tmp_path, "20261001T000000Z-a", make_report(passed=19, cases=21))
+    small_test = make_report(passed=9, cases=10)
+    small_test["meta"]["split"] = "test"
+    write_run(tmp_path, "20261002T000000Z-a", small_test)
+    assert sorted(r["tasks"]["agent"]["cases"] for r in load_latest_runs(tmp_path)) == [10, 21]

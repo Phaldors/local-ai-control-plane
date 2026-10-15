@@ -30,7 +30,8 @@ Ollama ve MLX-LM üstünde birden fazla yerel modeli servis eden, ölçen ve
 - [ ] M4 (koşullu, şimdilik askıda) Router: görev tipi + güvene göre kademeli yönlendirme
 - [x] M5 Güvenlik: politika guard'ı, PII redaction, audit, escalation, 21 vakalık güvenlik suite'i; guard kapalı/açık ölçüldü (docs/findings-m5.md)
 - [x] M6 Yönetişim: regression gate (baseline'lar commit'li), tek sayfalık panel, audit özeti (docs/findings-m6.md)
-- [ ] M7 README, rapor, CV, GitHub (`Phaldors/local-ai-control-plane`)
+- [x] M7a Final: test split'te tek seferlik koşu, önceden yazılmış beklentiler, rapor (docs/final-report.md)
+- [ ] M7b CV satırları ve LinkedIn proje metni
 
 ## İlkeler
 - validation ile ayar, test split yalnızca final dondurulmuş raporda.

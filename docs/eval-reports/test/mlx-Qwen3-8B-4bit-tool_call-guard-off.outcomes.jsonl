@@ -1,0 +1,20 @@
+{"case_id": "tool-test-w1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 745.3146250009013, "prompt_tokens": 526, "completion_tokens": 22}
+{"case_id": "tool-test-w2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 484.8210830004973, "prompt_tokens": 531, "completion_tokens": 22}
+{"case_id": "tool-test-w3", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 461.96724999936123, "prompt_tokens": 526, "completion_tokens": 21}
+{"case_id": "tool-test-o1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 547.5012080005399, "prompt_tokens": 532, "completion_tokens": 26}
+{"case_id": "tool-test-o2", "task": "tool_call", "passed": false, "failure": "no_call", "detail": {"output": "To retrieve the delivered orders for customer C-48, I will use the `search_orders` function with the customer ID set to \"C-48\" and the status set to \"delivered\"."}, "latency_ms": 847.4889999997686, "prompt_tokens": 528, "completion_tokens": 43}
+{"case_id": "tool-test-o3", "task": "tool_call", "passed": false, "failure": "no_call", "detail": {"output": "Maalesef, \"C-7 siparişlerinden bekleyenleri göster\" ifadesi, sadece müşteri ID'si ile filtreleme yaparken kullanılır. Lütfen müşteri ID'sini belirtin."}, "latency_ms": 1091.6216250006983, "prompt_tokens": 533, "completion_tokens": 55}
+{"case_id": "tool-test-t1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 614.6499999995285, "prompt_tokens": 531, "completion_tokens": 29}
+{"case_id": "tool-test-t2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 611.8118329995923, "prompt_tokens": 532, "completion_tokens": 29}
+{"case_id": "tool-test-c1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 703.809040998749, "prompt_tokens": 529, "completion_tokens": 35}
+{"case_id": "tool-test-c2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 714.5530830002826, "prompt_tokens": 529, "completion_tokens": 36}
+{"case_id": "tool-test-m1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 556.2750000008236, "prompt_tokens": 531, "completion_tokens": 27}
+{"case_id": "tool-test-m2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 630.7964999996329, "prompt_tokens": 532, "completion_tokens": 31}
+{"case_id": "tool-test-n1", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 948.433790999843, "prompt_tokens": 529, "completion_tokens": 49}
+{"case_id": "tool-test-n2", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 889.7625420013355, "prompt_tokens": 523, "completion_tokens": 46}
+{"case_id": "tool-test-n3", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 690.3611660000024, "prompt_tokens": 523, "completion_tokens": 35}
+{"case_id": "tool-test-n4", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 446.46279200060235, "prompt_tokens": 525, "completion_tokens": 21}
+{"case_id": "tool-test-n5", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 6273.800249999113, "prompt_tokens": 528, "completion_tokens": 346}
+{"case_id": "tool-test-n6", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 496.08812499900523, "prompt_tokens": 525, "completion_tokens": 24}
+{"case_id": "tool-test-h1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 579.1656250003143, "prompt_tokens": 535, "completion_tokens": 28}
+{"case_id": "tool-test-h2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 783.5065409999515, "prompt_tokens": 533, "completion_tokens": 40}

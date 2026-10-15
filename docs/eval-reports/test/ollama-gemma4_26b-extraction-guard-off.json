@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "run_id": "20261015T192805Z-ollama-gemma4_26b",
+    "runtime": "ollama",
+    "model": "gemma4:26b",
+    "suite": "extraction",
+    "split": "test",
+    "max_tokens": 1024,
+    "think": false,
+    "guard": false,
+    "case_count": 50,
+    "model_memory_mb": 1387.045845,
+    "commit": "e937f88",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "extraction": {
+      "cases": 50,
+      "passed": 47,
+      "pass_rate": 0.94,
+      "failures": {
+        "wrong_value": {
+          "count": 3,
+          "case_ids": [
+            "cord-test-013",
+            "cord-test-018",
+            "cord-test-031"
+          ]
+        }
+      },
+      "latency_ms_p50": 546.1740419996204,
+      "latency_ms_p95": 638.0211249997956,
+      "completion_tokens_mean": 40.84,
+      "prompt_tokens_total": 9261,
+      "completion_tokens_total": 2042,
+      "latency_ms_total": 29900.9675430043,
+      "json_valid_rate": 1.0,
+      "schema_valid_rate": 1.0,
+      "field_accuracy": {
+        "total_price": 1.0,
+        "subtotal_price": 0.9487179487179487,
+        "item_count": 0.9666666666666667
+      }
+    }
+  }
+}

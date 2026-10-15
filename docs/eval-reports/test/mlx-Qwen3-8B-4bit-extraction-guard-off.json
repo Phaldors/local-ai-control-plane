@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "run_id": "20261015T193348Z-mlx-mlx-community_Qwen3-8B-4bit",
+    "runtime": "mlx",
+    "model": "mlx-community/Qwen3-8B-4bit",
+    "suite": "extraction",
+    "split": "test",
+    "max_tokens": 1024,
+    "think": false,
+    "guard": false,
+    "case_count": 50,
+    "model_memory_mb": 4747.203125,
+    "commit": "e937f88",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "extraction": {
+      "cases": 50,
+      "passed": 27,
+      "pass_rate": 0.54,
+      "failures": {
+        "wrong_value": {
+          "count": 23,
+          "case_ids": [
+            "cord-test-001",
+            "cord-test-006",
+            "cord-test-011",
+            "cord-test-012",
+            "cord-test-013",
+            "cord-test-015",
+            "cord-test-017",
+            "cord-test-018",
+            "cord-test-021",
+            "cord-test-022",
+            "cord-test-023",
+            "cord-test-024",
+            "cord-test-025",
+            "cord-test-031",
+            "cord-test-033",
+            "cord-test-035",
+            "cord-test-038",
+            "cord-test-040",
+            "cord-test-045",
+            "cord-test-046",
+            "cord-test-047",
+            "cord-test-051",
+            "cord-test-052"
+          ]
+        }
+      },
+      "latency_ms_p50": 684.6397499994055,
+      "latency_ms_p95": 856.0961669991229,
+      "completion_tokens_mean": 34.32,
+      "prompt_tokens_total": 13806,
+      "completion_tokens_total": 1716,
+      "latency_ms_total": 36245.10158899284,
+      "json_valid_rate": 1.0,
+      "schema_valid_rate": 1.0,
+      "field_accuracy": {
+        "total_price": 1.0,
+        "subtotal_price": 0.5384615384615384,
+        "item_count": 0.8
+      }
+    }
+  }
+}

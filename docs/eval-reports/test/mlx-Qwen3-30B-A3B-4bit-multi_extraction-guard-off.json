@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "run_id": "20261015T193135Z-mlx-mlx-community_Qwen3-30B-A3B-4bit",
+    "runtime": "mlx",
+    "model": "mlx-community/Qwen3-30B-A3B-4bit",
+    "suite": "multi_extraction",
+    "split": "test",
+    "max_tokens": 1024,
+    "think": false,
+    "guard": false,
+    "case_count": 40,
+    "model_memory_mb": 16734.953125,
+    "commit": "e937f88",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "multi_extraction": {
+      "cases": 40,
+      "passed": 31,
+      "pass_rate": 0.775,
+      "failures": {
+        "count_mismatch": {
+          "count": 2,
+          "case_ids": [
+            "multi-test-n08-04",
+            "multi-test-n08-08"
+          ]
+        },
+        "wrong_value": {
+          "count": 7,
+          "case_ids": [
+            "multi-test-n04-06",
+            "multi-test-n08-06",
+            "multi-test-n16-01",
+            "multi-test-n16-02",
+            "multi-test-n16-03",
+            "multi-test-n16-04",
+            "multi-test-n16-08"
+          ]
+        }
+      },
+      "latency_ms_p50": 1420.7428749996325,
+      "latency_ms_p95": 2982.908582998789,
+      "completion_tokens_mean": 101.075,
+      "prompt_tokens_total": 35056,
+      "completion_tokens_total": 4043,
+      "latency_ms_total": 58515.969205993315,
+      "by_receipt_count": {
+        "2": {
+          "cases": 10,
+          "pass_rate": 1.0,
+          "item_accuracy": 1.0
+        },
+        "4": {
+          "cases": 10,
+          "pass_rate": 0.9,
+          "item_accuracy": 0.975
+        },
+        "8": {
+          "cases": 10,
+          "pass_rate": 0.7,
+          "item_accuracy": 0.875
+        },
+        "16": {
+          "cases": 10,
+          "pass_rate": 0.5,
+          "item_accuracy": 0.96875
+        }
+      }
+    }
+  }
+}

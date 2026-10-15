@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "run_id": "20261015T193614Z-mlx-mlx-community_Qwen3-8B-4bit",
+    "runtime": "mlx",
+    "model": "mlx-community/Qwen3-8B-4bit",
+    "suite": "tool_call",
+    "split": "test",
+    "max_tokens": 1024,
+    "think": false,
+    "guard": false,
+    "case_count": 20,
+    "model_memory_mb": 4748.484375,
+    "commit": "e937f88",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "tool_call": {
+      "cases": 20,
+      "passed": 18,
+      "pass_rate": 0.9,
+      "failures": {
+        "no_call": {
+          "count": 2,
+          "case_ids": [
+            "tool-test-o2",
+            "tool-test-o3"
+          ]
+        }
+      },
+      "latency_ms_p50": 690.3611660000024,
+      "latency_ms_p95": 1091.6216250006983,
+      "completion_tokens_mean": 48.25,
+      "prompt_tokens_total": 10581,
+      "completion_tokens_total": 965,
+      "latency_ms_total": 19118.191080000543
+    }
+  }
+}

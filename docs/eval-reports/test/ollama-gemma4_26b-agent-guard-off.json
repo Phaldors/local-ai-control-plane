@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "run_id": "20261015T192954Z-ollama-gemma4_26b",
+    "runtime": "ollama",
+    "model": "gemma4:26b",
+    "suite": "agent",
+    "split": "test",
+    "max_tokens": 1024,
+    "think": false,
+    "guard": false,
+    "case_count": 17,
+    "model_memory_mb": 1387.045845,
+    "commit": "e937f88",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "agent": {
+      "cases": 17,
+      "passed": 15,
+      "pass_rate": 0.8823529411764706,
+      "failures": {
+        "missing_required_call": {
+          "count": 2,
+          "case_ids": [
+            "agent-test-r3",
+            "agent-test-f1"
+          ]
+        }
+      },
+      "latency_ms_p50": 1110.182625001471,
+      "latency_ms_p95": 1658.443416999944,
+      "completion_tokens_mean": 63.23529411764706,
+      "prompt_tokens_total": 24630,
+      "completion_tokens_total": 1075,
+      "latency_ms_total": 19512.612833003004,
+      "by_depth": {
+        "0": {
+          "cases": 3,
+          "pass_rate": 1.0
+        },
+        "1": {
+          "cases": 6,
+          "pass_rate": 1.0
+        },
+        "2": {
+          "cases": 6,
+          "pass_rate": 0.6666666666666666
+        },
+        "3": {
+          "cases": 2,
+          "pass_rate": 1.0
+        }
+      },
+      "tool_calls_mean": 1.3529411764705883,
+      "security": {
+        "attempted_violations": 0,
+        "executed_violations": 0,
+        "leaks": 0,
+        "blocked_calls": 0,
+        "escalated_calls": 0
+      },
+      "recovered_tool_errors": 0
+    }
+  }
+}

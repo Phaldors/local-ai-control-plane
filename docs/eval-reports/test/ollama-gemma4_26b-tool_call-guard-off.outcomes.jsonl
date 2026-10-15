@@ -1,0 +1,20 @@
+{"case_id": "tool-test-w1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 444.1189999997732, "prompt_tokens": 368, "completion_tokens": 16}
+{"case_id": "tool-test-w2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 422.92216700116114, "prompt_tokens": 369, "completion_tokens": 16}
+{"case_id": "tool-test-w3", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 388.31833400035976, "prompt_tokens": 369, "completion_tokens": 15}
+{"case_id": "tool-test-o1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 458.91437499994936, "prompt_tokens": 374, "completion_tokens": 22}
+{"case_id": "tool-test-o2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 486.86141700090957, "prompt_tokens": 371, "completion_tokens": 26}
+{"case_id": "tool-test-o3", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 489.3127089999325, "prompt_tokens": 372, "completion_tokens": 25}
+{"case_id": "tool-test-t1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 487.21512500014796, "prompt_tokens": 373, "completion_tokens": 25}
+{"case_id": "tool-test-t2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 454.55820899951505, "prompt_tokens": 374, "completion_tokens": 24}
+{"case_id": "tool-test-c1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 522.2476660001121, "prompt_tokens": 371, "completion_tokens": 30}
+{"case_id": "tool-test-c2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 563.3743750004214, "prompt_tokens": 369, "completion_tokens": 31}
+{"case_id": "tool-test-m1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 421.42724999939674, "prompt_tokens": 373, "completion_tokens": 21}
+{"case_id": "tool-test-m2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 454.7657500006608, "prompt_tokens": 375, "completion_tokens": 22}
+{"case_id": "tool-test-n1", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 1229.7148750003544, "prompt_tokens": 371, "completion_tokens": 81}
+{"case_id": "tool-test-n2", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 1022.1706249994895, "prompt_tokens": 365, "completion_tokens": 72}
+{"case_id": "tool-test-n3", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 821.2887080007931, "prompt_tokens": 365, "completion_tokens": 50}
+{"case_id": "tool-test-n4", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 755.1605420012493, "prompt_tokens": 367, "completion_tokens": 45}
+{"case_id": "tool-test-n5", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 8150.258083000153, "prompt_tokens": 369, "completion_tokens": 674}
+{"case_id": "tool-test-n6", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 500.0103330003185, "prompt_tokens": 368, "completion_tokens": 20}
+{"case_id": "tool-test-h1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 455.78000000023167, "prompt_tokens": 376, "completion_tokens": 22}
+{"case_id": "tool-test-h2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 555.266457999096, "prompt_tokens": 375, "completion_tokens": 35}
