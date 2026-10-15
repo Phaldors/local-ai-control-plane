@@ -9,6 +9,7 @@ from pathlib import Path
 from controlplane.client import LLMClient
 from controlplane.evals.contract import CaseOutcome, GoldenCase
 from controlplane.evals.scorers import SCORERS
+from controlplane.memory import runtime_memory_mb
 from controlplane.tracing import TracedClient, TraceSink
 from controlplane.types import ChatRequest, RuntimeError_
 
@@ -107,6 +108,10 @@ def summarize(cases: list[GoldenCase], outcomes: list[CaseOutcome]) -> dict:
     return tasks
 
 
+def _mb(value: float | None) -> str:
+    return "n/a" if value is None else f"{value / 1024:.1f} GB"
+
+
 def _ms(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.0f} ms"
 
@@ -118,6 +123,7 @@ def render_markdown(meta: dict, tasks: dict) -> str:
         f"- runtime: `{meta['runtime']}`, model: `{meta['model']}`",
         f"- suite: `{meta['suite']}` ({meta['case_count']} cases, split `{meta['split']}`)",
         f"- max_tokens: {meta['max_tokens']}, think: {meta['think']}",
+        f"- resident model memory (approx): {_mb(meta['model_memory_mb'])}",
         f"- commit: `{meta['commit']}`, host: {meta['host']}",
         "",
     ]
@@ -172,6 +178,7 @@ def run_eval(
         "max_tokens": max_tokens,
         "think": think,
         "case_count": len(cases),
+        "model_memory_mb": runtime_memory_mb(client.runtime, model),
         "commit": _git_commit(),
         "host": f"{platform.machine()} / {platform.platform()}",
     }
