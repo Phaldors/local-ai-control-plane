@@ -58,9 +58,13 @@ def main() -> None:
     parser.add_argument("--a", required=True, help="runtime:model_key")
     parser.add_argument("--b", required=True)
     parser.add_argument("--runs", type=Path, default=Path("runs"))
+    parser.add_argument("--max-tokens", type=int, default=1024)
     args = parser.parse_args()
     (rt_a, key_a), (rt_b, key_b) = args.a.split(":", 1), args.b.split(":", 1)
-    runs_a, runs_b = latest_runs(args.runs, rt_a, key_a), latest_runs(args.runs, rt_b, key_b)
+    runs_a, runs_b = (
+        latest_runs(args.runs, rt_a, key_a, args.max_tokens),
+        latest_runs(args.runs, rt_b, key_b, args.max_tokens),
+    )
     for key in sorted(set(runs_a) & set(runs_b), key=str):
         a, b = outcomes(runs_a[key]), outcomes(runs_b[key])
         shared = sorted(set(a) & set(b))

@@ -37,8 +37,10 @@ failed were about Qwen3-30B-A3B's quality generalizing (validation was optimisti
 ## Runtime and checkpoint confound
 On MLX the hybrid Qwen3-30B-A3B with thinking off often announces an action and stops instead of calling the tool
 (19/29 on the agent suite). The Ollama tag `qwen3:30b-a3b` that scored 27/29 is a different, reasoning-only checkpoint
-(Thinking-2507), so that comparison does not isolate a cause. See [findings](docs/findings-runtime-confound.md), which
-also corrects an earlier version of itself.
+(Thinking-2507). Running that same checkpoint on both runtimes gave 28/29 (MLX) and 27/29 (Ollama), with matching
+failure patterns: runtime, quantization and template are not the source of the gap; checkpoint and reasoning are,
+and are not separated further. See [findings](docs/findings-runtime-confound.md), which also corrects an earlier
+version of itself.
 
 ## Injection follow-up
 A provenance guard mode, a mid-task injection suite and an 8-payload red-team sweep were added

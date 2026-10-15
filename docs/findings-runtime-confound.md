@@ -57,10 +57,31 @@ The two tool-use suites differ significantly. Cost differs too: agent suite p50 
   the thinking-off tool-use failure and was not re-run.
 - The router conclusion is unaffected.
 
-## How to separate the variables (not done)
-Run the same checkpoint on both runtimes: `mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit` on MLX (reasoning always on)
-against the Ollama tag, or the original hybrid on Ollama (`ollama pull` of a hybrid tag) against the MLX hybrid, in
-both cases with reasoning set the same way. Each needs a model download.
+## Same checkpoint on both runtimes (done; plan in `same-checkpoint-plan.md`)
+Qwen3-30B-A3B-Thinking-2507 on MLX 4-bit (`mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit`, 17.2 GB, downloaded with
+approval; config confirms the same family: context 262,144, no `enable_thinking`) against the Ollama tag
+`qwen3:30b-a3b` (GGUF Q4_K_M). Validation split, thinking at its default (the checkpoint always reasons), `max_tokens`
+4096 on both sides, one run each. Reports: `docs/eval-reports/same-checkpoint/`.
+
+| suite | MLX 4-bit | Ollama Q4_K_M | discordant (MLX-only / Ollama-only) | sign-test p | p50 latency MLX / Ollama | mean tokens |
+| --- | --- | --- | --- | --- | --- | --- |
+| tool_call (37) | 35/37 | 35/37 | 0 / 0 | 1.00 | 2.3 s / 2.2 s | 220 / 245 |
+| agent (29) | 28/29 | 27/29 | 1 / 0 | 1.00 | 7.4 s / 6.9 s | 886 / 908 |
+| agent_security, guard off (21) | 16/21 | 17/21 | 0 / 1 | 1.00 | 8.9 s / 8.0 s | 808 / 801 |
+| extraction (50) | 45/50 | 48/50 | 1 / 4 | 0.38 | 10.3 s / 14.6 s | 1164 / 1494 |
+
+The expectation written in advance (agent and security pass counts within 2 cases, no significant sign test) **held**:
+differences are 1, 1 and (outside the expectation) 3 cases on extraction, none significant. The failure patterns match as well:
+tool_call has the same two failures on both runtimes (one `unexpected_call`, one `wrong_args`), and both execute 4
+violations on the security suite with the guard off.
+
+What this supports: for this checkpoint, runtime, quantization format, chat template and tool-call parser are **not** a
+source of large differences on these suites. What it does not support: the earlier gap between the hybrid checkpoint on MLX
+with thinking off (19/29 agent) and the Thinking-2507 checkpoint (27-28/29) is therefore not a runtime artifact; it comes
+from the checkpoint and/or from reasoning being on. The two are still entangled: the hybrid with reasoning on, run earlier
+on MLX (thinking default, 4096 tokens), scored 23/29, between the two, so reasoning accounts for part of the gap and the
+2507 checkpoint plausibly for the rest, but this was not isolated (that earlier hybrid run is a single run with its own
+token-budget effects). The hybrid on Ollama was not run.
 
 ## The leak detector (still valid)
 `controlplane/reasoning.py` flags an answer that starts with a reasoning opener followed by first-person planning

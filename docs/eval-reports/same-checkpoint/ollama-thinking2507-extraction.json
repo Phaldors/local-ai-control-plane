@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "run_id": "20261015T211341Z-ollama-qwen3_30b-a3b",
+    "runtime": "ollama",
+    "model": "qwen3:30b-a3b",
+    "suite": "extraction",
+    "split": "validation",
+    "max_tokens": 4096,
+    "think": null,
+    "guard": false,
+    "guard_mode": "off",
+    "case_count": 50,
+    "model_memory_mb": 21827.0951,
+    "reasoning_leak": {
+      "think_off_calls": 0,
+      "leaked": 0
+    },
+    "commit": "058fb5b",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "extraction": {
+      "cases": 50,
+      "passed": 48,
+      "pass_rate": 0.96,
+      "failures": {
+        "truncated": {
+          "count": 1,
+          "case_ids": [
+            "cord-val-002"
+          ]
+        },
+        "wrong_value": {
+          "count": 1,
+          "case_ids": [
+            "cord-val-041"
+          ]
+        }
+      },
+      "latency_ms_p50": 14605.293708002137,
+      "latency_ms_p95": 33692.38170800236,
+      "completion_tokens_mean": 1494.08,
+      "prompt_tokens_total": 8421,
+      "completion_tokens_total": 74704,
+      "latency_ms_total": 808381.8635830067,
+      "json_valid_rate": 0.98,
+      "schema_valid_rate": 0.98,
+      "field_accuracy": {
+        "total_price": 1.0,
+        "subtotal_price": 1.0,
+        "item_count": 0.9642857142857143
+      }
+    }
+  }
+}

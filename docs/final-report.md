@@ -90,4 +90,6 @@ an action and stops instead of calling the tool (shown on the raw server respons
 rows on the agent and security suites; Qwen3-8B (MLX) likely shares it. So the Qwen3 agent/security numbers and
 ordering expectation #3 are measurements of "thinking off on MLX", not clean evidence about model quality, and the
 sentence "gemma4 is the most accurate on every suite" should be read with that caveat. The guard results
-(expectations #4 to #6) do not depend on this and stand. Nothing above was re-run or changed (the test split is spent).
+(expectations #4 to #6) do not depend on this and stand. A same-checkpoint run later showed the Thinking-2507 checkpoint behaves alike on MLX and Ollama (28/29 and 27/29
+on the agent suite), so the earlier gap is not a runtime artifact; checkpoint and reasoning remain entangled.
+Nothing above was re-run or changed (the test split is spent).
