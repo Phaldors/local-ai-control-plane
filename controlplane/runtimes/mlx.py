@@ -10,7 +10,23 @@ import time
 
 import httpx
 
-from controlplane.types import ChatRequest, ChatResult, RuntimeError_, ToolCall, Usage
+from controlplane.types import ChatRequest, ChatResult, Message, RuntimeError_, ToolCall, Usage
+
+
+def _message(message: Message) -> dict:
+    out: dict = {"role": message.role, "content": message.content}
+    if message.tool_calls:
+        out["tool_calls"] = [
+            {
+                "id": c.id or f"call_{i}",
+                "type": "function",
+                "function": {"name": c.name, "arguments": json.dumps(c.arguments)},
+            }
+            for i, c in enumerate(message.tool_calls)
+        ]
+    if message.role == "tool" and message.tool_call_id:
+        out["tool_call_id"] = message.tool_call_id
+    return out
 
 
 class MLXClient:
@@ -25,7 +41,7 @@ class MLXClient:
         self._http = httpx.Client(base_url=base_url, timeout=timeout_s, transport=transport)
 
     def chat(self, request: ChatRequest) -> ChatResult:
-        messages = [m.model_dump() for m in request.messages]
+        messages = [_message(m) for m in request.messages]
         if request.response_schema is not None:
             instruction = (
                 "Respond with a single JSON object that matches this JSON schema. "

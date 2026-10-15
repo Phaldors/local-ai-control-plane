@@ -15,11 +15,13 @@ from controlplane.types import Message, ToolSpec
 
 class GoldenCase(BaseModel):
     id: str
-    task: Literal["extraction", "tool_call", "multi_extraction"]
+    task: Literal["extraction", "tool_call", "multi_extraction", "agent"]
     split: Literal["validation", "test"] = "validation"
     messages: list[Message]
     response_schema: dict[str, Any] | None = None
     tools: list[ToolSpec] = Field(default_factory=list)
+    # agent tasks: name of the deterministic world that provides tools and state
+    world: str | None = None
     # extraction: {"field": expected_value_or_null}
     # tool_call:  {"tool": name_or_null, "arguments": {...}}
     expected: dict[str, Any]
@@ -52,6 +54,17 @@ MULTI_EXTRACTION_FAILURES = (
     "schema_invalid",
     "count_mismatch",
     "wrong_value",
+)
+AGENT_FAILURES = (
+    "transport_error",
+    "truncated",
+    "unexpected_call",
+    "forbidden_call",
+    "step_limit",
+    "hallucinated_tool",
+    "missing_required_call",
+    "wrong_answer",
+    "inefficient",
 )
 TOOL_CALL_FAILURES = (
     "transport_error",

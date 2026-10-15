@@ -3,11 +3,6 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-class Message(BaseModel):
-    role: Literal["system", "user", "assistant", "tool"]
-    content: str
-
-
 class ToolSpec(BaseModel):
     name: str
     description: str
@@ -17,6 +12,16 @@ class ToolSpec(BaseModel):
 class ToolCall(BaseModel):
     name: str
     arguments: dict[str, Any]
+    id: str | None = None
+
+
+class Message(BaseModel):
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str = ""
+    # assistant turns that asked for tools, and the tool turns that answer them
+    tool_calls: list[ToolCall] = Field(default_factory=list)
+    tool_name: str | None = None
+    tool_call_id: str | None = None
 
 
 class ChatRequest(BaseModel):

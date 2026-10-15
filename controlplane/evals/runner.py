@@ -6,12 +6,15 @@ from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
 
+from controlplane.agent import run_agent
 from controlplane.client import LLMClient
+from controlplane.evals.agent_scorer import score_agent
 from controlplane.evals.contract import CaseOutcome, GoldenCase
 from controlplane.evals.scorers import SCORERS
 from controlplane.memory import runtime_memory_mb
 from controlplane.tracing import TracedClient, TraceSink
 from controlplane.types import ChatRequest, RuntimeError_
+from controlplane.worlds.shop import ShopWorld
 
 
 def _git_commit() -> str | None:
@@ -41,6 +44,31 @@ def run_cases(
 ) -> list[CaseOutcome]:
     outcomes = []
     for case in cases:
+        if case.task == "agent":
+            world = ShopWorld()
+            try:
+                run = run_agent(
+                    client,
+                    model,
+                    case.messages,
+                    world,
+                    max_turns=case.expected.get("max_turns", 10),
+                    max_tokens=max_tokens,
+                    think=think,
+                )
+            except RuntimeError_ as exc:
+                outcomes.append(
+                    CaseOutcome(
+                        case_id=case.id,
+                        task=case.task,
+                        passed=False,
+                        failure="transport_error",
+                        detail={"error": str(exc)},
+                    )
+                )
+                continue
+            outcomes.append(score_agent(case, run))
+            continue
         request = ChatRequest(
             model=model,
             messages=case.messages,
@@ -104,6 +132,23 @@ def summarize(cases: list[GoldenCase], outcomes: list[CaseOutcome]) -> dict:
                 not in ("invalid_json", "truncated", "schema_invalid", "transport_error")
             ) / len(items)
             summary["field_accuracy"] = {k: sum(v) / len(v) for k, v in fields.items()}
+        if task == "agent":
+            by_depth: dict[int, list[CaseOutcome]] = defaultdict(list)
+            for item in items:
+                by_depth[item.detail.get("n", 0)].append(item)
+            summary["by_depth"] = {
+                str(n): {
+                    "cases": len(group),
+                    "pass_rate": sum(1 for g in group if g.passed) / len(group),
+                }
+                for n, group in sorted(by_depth.items())
+            }
+            summary["tool_calls_mean"] = statistics.fmean(
+                i.detail.get("tool_calls", 0) for i in items
+            )
+            summary["recovered_tool_errors"] = sum(
+                1 for i in items if i.passed and i.detail.get("flags", {}).get("tool_error")
+            )
         if task == "multi_extraction":
             by_n: dict[int, list[CaseOutcome]] = defaultdict(list)
             for item in items:
@@ -154,6 +199,13 @@ def render_markdown(meta: dict, tasks: dict) -> str:
                 f"schema valid: {s['schema_valid_rate']:.0%}"
             )
             lines.append(f"- field accuracy: {s['field_accuracy']}")
+        if task == "agent":
+            lines.append(
+                f"- mean tool calls: {s['tool_calls_mean']:.1f}, "
+                f"passed after recovering from a tool error: {s['recovered_tool_errors']}"
+            )
+            for n, info in s["by_depth"].items():
+                lines.append(f"- depth {n}: pass {info['pass_rate']:.0%} ({info['cases']} cases)")
         if task == "multi_extraction":
             for n, info in s["by_receipt_count"].items():
                 lines.append(
