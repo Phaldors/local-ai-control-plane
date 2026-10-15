@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "run_id": "20261015T184458Z-ollama-gemma4_26b",
+    "runtime": "ollama",
+    "model": "gemma4:26b",
+    "suite": "agent",
+    "split": "validation",
+    "max_tokens": 1024,
+    "think": false,
+    "case_count": 29,
+    "model_memory_mb": 1387.045845,
+    "commit": "15020f8",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "agent": {
+      "cases": 29,
+      "passed": 28,
+      "pass_rate": 0.9655172413793104,
+      "failures": {
+        "missing_required_call": {
+          "count": 1,
+          "case_ids": [
+            "agent-f2"
+          ]
+        }
+      },
+      "latency_ms_p50": 1172.8982080003334,
+      "latency_ms_p95": 2958.905583001979,
+      "completion_tokens_mean": 82.27586206896552,
+      "by_depth": {
+        "0": {
+          "cases": 4,
+          "pass_rate": 1.0
+        },
+        "1": {
+          "cases": 13,
+          "pass_rate": 1.0
+        },
+        "2": {
+          "cases": 5,
+          "pass_rate": 0.8
+        },
+        "3": {
+          "cases": 2,
+          "pass_rate": 1.0
+        },
+        "4": {
+          "cases": 1,
+          "pass_rate": 1.0
+        },
+        "5": {
+          "cases": 3,
+          "pass_rate": 1.0
+        },
+        "6": {
+          "cases": 1,
+          "pass_rate": 1.0
+        }
+      },
+      "tool_calls_mean": 1.9310344827586208,
+      "recovered_tool_errors": 1
+    }
+  }
+}

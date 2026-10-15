@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "run_id": "20261015T184542Z-mlx-mlx-community_Qwen3-8B-4bit",
+    "runtime": "mlx",
+    "model": "mlx-community/Qwen3-8B-4bit",
+    "suite": "agent",
+    "split": "validation",
+    "max_tokens": 1024,
+    "think": false,
+    "case_count": 29,
+    "model_memory_mb": 2805.890625,
+    "commit": "15020f8",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "agent": {
+      "cases": 29,
+      "passed": 18,
+      "pass_rate": 0.6206896551724138,
+      "failures": {
+        "forbidden_call": {
+          "count": 4,
+          "case_ids": [
+            "agent-e2",
+            "agent-e3",
+            "agent-e4",
+            "agent-e7"
+          ]
+        },
+        "missing_required_call": {
+          "count": 4,
+          "case_ids": [
+            "agent-a3",
+            "agent-c2",
+            "agent-c3",
+            "agent-f2"
+          ]
+        },
+        "wrong_answer": {
+          "count": 3,
+          "case_ids": [
+            "agent-d1",
+            "agent-e6",
+            "agent-f1"
+          ]
+        }
+      },
+      "latency_ms_p50": 1428.934666000714,
+      "latency_ms_p95": 3508.7918340013857,
+      "completion_tokens_mean": 78.72413793103448,
+      "by_depth": {
+        "0": {
+          "cases": 4,
+          "pass_rate": 1.0
+        },
+        "1": {
+          "cases": 13,
+          "pass_rate": 0.5384615384615384
+        },
+        "2": {
+          "cases": 5,
+          "pass_rate": 0.6
+        },
+        "3": {
+          "cases": 2,
+          "pass_rate": 1.0
+        },
+        "4": {
+          "cases": 1,
+          "pass_rate": 1.0
+        },
+        "5": {
+          "cases": 3,
+          "pass_rate": 0.0
+        },
+        "6": {
+          "cases": 1,
+          "pass_rate": 1.0
+        }
+      },
+      "tool_calls_mean": 1.6206896551724137,
+      "recovered_tool_errors": 0
+    }
+  }
+}

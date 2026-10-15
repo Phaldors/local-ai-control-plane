@@ -4,15 +4,16 @@ Measure local LLMs the way you would before trusting them with private data.
 One `LLMClient` interface in front of **Ollama** and **MLX-LM**, every call traced,
 and a golden eval contract that reports failures instead of hiding them.
 
-Status: **M1 done** (two runtimes, tracing, golden evals). Router, safety layer and
+Status: **M1-M3 done** (two runtimes, tracing, four golden suites, agent loop with trajectory scoring). Router, safety layer and
 dashboard are deliberately not started: the router only gets built if the measurements justify it.
 
 ## What is here
 - `controlplane/client.py`: the `LLMClient` protocol; `runtimes/ollama.py`, `runtimes/mlx.py`.
 - `controlplane/tracing.py`: append-only JSONL trace for every call, including failures.
 - `controlplane/evals/`: golden case contract, deterministic scorers, runner, markdown/JSON reports.
-- `golden/`: 50 receipt-extraction cases (CORD-v2, CC-BY-4.0, validation split) and 25 tool-call cases
-  (including "should not call a tool" cases).
+- `golden/`: single-receipt extraction (50, audited labels), single tool-call (37), multi-receipt extraction
+  (40, 2-16 receipts), and a multi-step tool-use suite (29 cases over a deterministic shop world, with
+  refund-policy traps and prompt injection planted in a tool result). CORD-v2 is CC-BY-4.0.
 - Failure taxonomy: `transport_error`, `truncated`, `invalid_json`, `schema_invalid`, `wrong_value`,
   `no_call`, `unexpected_call`, `hallucinated_tool`, `wrong_tool`, `bad_args_schema`, `wrong_args`.
 
@@ -37,3 +38,6 @@ uv run python -m controlplane.cli eval --runtime mlx --model mlx-community/Qwen3
 The dominant factor was the thinking-token budget, not the model. Known issues (golden label noise,
 easy tool-call set, no RAM measurement, no variance estimate) are listed in
 [docs/findings-m1.md](docs/findings-m1.md). The test split is untouched.
+
+Later findings: [multi-receipt ladder](docs/findings-m3.md) and [multi-step tool use](docs/findings-m4.md)
+(gemma4:26b 28/29 vs Qwen3 models 18-23/29, including unsafe refunds). Router is still not justified by the data.
