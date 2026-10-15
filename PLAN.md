@@ -25,6 +25,7 @@ Ollama ve MLX-LM üstünde birden fazla yerel modeli servis eden, ölçen ve
 - [x] M1c MLX runtime: gerçek `mlx_lm.server` koşusu doğrulandı (Qwen3-8B, Qwen3-30B-A3B)
 - [x] M2 Ölçüm: 3 model x iki runtime, golden v2, thinking açık/kapalı (docs/findings-m2.md)
 - [x] M3 Karar: router gerekçelendirilmiyor (extraction'da en ucuz konfigürasyon en iyisi). Revisit koşulları findings-m2.md sonunda
+- [x] M3b Daha zor görev (çok fişli extraction, 2-16 fiş): güçlü modeller doygun, router yine gerekçelendirilmedi (docs/findings-m3.md)
 - [ ] M4 (koşullu, şimdilik askıda) Router: görev tipi + güvene göre kademeli yönlendirme
 - [ ] M5 Güvenlik: PII redaction, allow-list'li tool, prompt-injection eval, human escalation
 - [ ] M6 Yönetişim: audit trail, regression gate, tek sayfalık token/latency paneli

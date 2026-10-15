@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "run_id": "20261015T183703Z-mlx-mlx-community_Qwen3-30B-A3B-4bit",
+    "runtime": "mlx",
+    "model": "mlx-community/Qwen3-30B-A3B-4bit",
+    "suite": "multi_extraction",
+    "split": "validation",
+    "max_tokens": 1024,
+    "think": false,
+    "case_count": 40,
+    "model_memory_mb": 2870.296875,
+    "commit": "2d4ac70",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "multi_extraction": {
+      "cases": 40,
+      "passed": 40,
+      "pass_rate": 1.0,
+      "failures": {},
+      "latency_ms_p50": 1770.9827910002787,
+      "latency_ms_p95": 3587.869832999786,
+      "completion_tokens_mean": 97.625,
+      "by_receipt_count": {
+        "2": {
+          "cases": 10,
+          "pass_rate": 1.0,
+          "item_accuracy": 1.0
+        },
+        "4": {
+          "cases": 10,
+          "pass_rate": 1.0,
+          "item_accuracy": 1.0
+        },
+        "8": {
+          "cases": 10,
+          "pass_rate": 1.0,
+          "item_accuracy": 1.0
+        },
+        "16": {
+          "cases": 10,
+          "pass_rate": 1.0,
+          "item_accuracy": 1.0
+        }
+      }
+    }
+  }
+}
