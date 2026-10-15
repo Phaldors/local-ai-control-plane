@@ -41,6 +41,8 @@ class MLXClient:
             "seed": request.seed,
             "stream": False,
         }
+        if request.think is not None:
+            body["chat_template_kwargs"] = {"enable_thinking": request.think}
         if request.tools:
             body["tools"] = [
                 {

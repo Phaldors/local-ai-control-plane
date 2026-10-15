@@ -85,6 +85,17 @@ def test_mlx_never_claims_schema_enforcement_and_injects_instruction():
     assert seen["body"]["messages"][0]["role"] == "system"
 
 
+def test_mlx_passes_think_flag_via_chat_template_kwargs():
+    seen = {}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(req.content)
+        return httpx.Response(200, json={"choices": [{"message": {"content": "{}"}}]})
+
+    MLXClient(transport=httpx.MockTransport(handler)).chat(request(think=False))
+    assert seen["body"]["chat_template_kwargs"] == {"enable_thinking": False}
+
+
 def test_mlx_parses_string_tool_arguments():
     def handler(req: httpx.Request) -> httpx.Response:
         return httpx.Response(
