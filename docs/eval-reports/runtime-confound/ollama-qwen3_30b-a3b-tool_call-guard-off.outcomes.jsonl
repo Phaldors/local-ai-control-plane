@@ -1,0 +1,37 @@
+{"case_id": "tool-w1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 1713.0189170002268, "prompt_tokens": 385, "completion_tokens": 139}
+{"case_id": "tool-w2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 1602.6757079998788, "prompt_tokens": 387, "completion_tokens": 148}
+{"case_id": "tool-w3", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 1542.148584001552, "prompt_tokens": 386, "completion_tokens": 141}
+{"case_id": "tool-w4", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 1554.7200839992001, "prompt_tokens": 381, "completion_tokens": 146}
+{"case_id": "tool-o1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 1711.867957999857, "prompt_tokens": 389, "completion_tokens": 158}
+{"case_id": "tool-o2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 2937.963917000161, "prompt_tokens": 390, "completion_tokens": 276}
+{"case_id": "tool-o3", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 3610.660917000132, "prompt_tokens": 397, "completion_tokens": 338}
+{"case_id": "tool-o4", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 1975.3889160001563, "prompt_tokens": 386, "completion_tokens": 185}
+{"case_id": "tool-t1", "task": "tool_call", "passed": false, "failure": "wrong_args", "detail": {"mismatched": {"title": {"expected": "payment page returns 500", "actual": "Payment page returns 500 error"}}, "called": "create_ticket", "arguments": {"priority": "high", "title": "Payment page returns 500 error"}, "call_count": 1}, "latency_ms": 3238.4816670000873, "prompt_tokens": 392, "completion_tokens": 305}
+{"case_id": "tool-t2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 3220.71245799998, "prompt_tokens": 400, "completion_tokens": 301}
+{"case_id": "tool-t3", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 1958.80416700129, "prompt_tokens": 390, "completion_tokens": 182}
+{"case_id": "tool-c1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 1823.103374999846, "prompt_tokens": 387, "completion_tokens": 170}
+{"case_id": "tool-c2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 4016.003249998903, "prompt_tokens": 389, "completion_tokens": 380}
+{"case_id": "tool-c3", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 2131.359417000567, "prompt_tokens": 388, "completion_tokens": 199}
+{"case_id": "tool-m1", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 2702.70787499976, "prompt_tokens": 391, "completion_tokens": 254}
+{"case_id": "tool-m2", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 3622.8719999999157, "prompt_tokens": 395, "completion_tokens": 341}
+{"case_id": "tool-m3", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 4851.974417000747, "prompt_tokens": 390, "completion_tokens": 459}
+{"case_id": "tool-n1", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 1467.7095409988397, "prompt_tokens": 385, "completion_tokens": 136}
+{"case_id": "tool-n2", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 3376.656874999753, "prompt_tokens": 389, "completion_tokens": 319}
+{"case_id": "tool-n3", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 2046.1090420012624, "prompt_tokens": 389, "completion_tokens": 191}
+{"case_id": "tool-n4", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 1679.3371669991757, "prompt_tokens": 385, "completion_tokens": 157}
+{"case_id": "tool-n5", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 1330.451957999685, "prompt_tokens": 383, "completion_tokens": 124}
+{"case_id": "tool-n6", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 1510.8838329997525, "prompt_tokens": 384, "completion_tokens": 141}
+{"case_id": "tool-n7", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 3029.0900410000177, "prompt_tokens": 388, "completion_tokens": 286}
+{"case_id": "tool-n8", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 1741.8274999999994, "prompt_tokens": 385, "completion_tokens": 163}
+{"case_id": "tool-h1", "task": "tool_call", "passed": false, "failure": "unexpected_call", "detail": {"called": "create_ticket", "call_count": 1}, "latency_ms": 1885.8649160010827, "prompt_tokens": 388, "completion_tokens": 176}
+{"case_id": "tool-h2", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 1762.1298340000067, "prompt_tokens": 385, "completion_tokens": 164}
+{"case_id": "tool-h3", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 4136.10725000035, "prompt_tokens": 389, "completion_tokens": 389}
+{"case_id": "tool-h4", "task": "tool_call", "passed": true, "failure": null, "detail": {}, "latency_ms": 2056.0569999997824, "prompt_tokens": 387, "completion_tokens": 190}
+{"case_id": "tool-h5", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 2906.215000000884, "prompt_tokens": 393, "completion_tokens": 270}
+{"case_id": "tool-h6", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 2512.0022499995684, "prompt_tokens": 387, "completion_tokens": 233}
+{"case_id": "tool-h7", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 3215.1888749995123, "prompt_tokens": 392, "completion_tokens": 298}
+{"case_id": "tool-h8", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 2283.5274999997637, "prompt_tokens": 396, "completion_tokens": 207}
+{"case_id": "tool-h9", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 4295.950625000842, "prompt_tokens": 397, "completion_tokens": 395}
+{"case_id": "tool-h10", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 2110.623874999874, "prompt_tokens": 391, "completion_tokens": 190}
+{"case_id": "tool-h11", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 6624.465791999683, "prompt_tokens": 399, "completion_tokens": 606}
+{"case_id": "tool-h12", "task": "tool_call", "passed": true, "failure": null, "detail": {"call_count": 1}, "latency_ms": 3281.3773750003747, "prompt_tokens": 396, "completion_tokens": 299}

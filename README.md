@@ -34,6 +34,12 @@ gemma4:26b 94% extraction, 100% multi-receipt and tool-call; with the guard on, 
 are 0 for all three models, no over-blocking. Four of seven pre-registered expectations held; the two that
 failed were about Qwen3-30B-A3B's quality generalizing (validation was optimistic).
 
+## Runtime confound
+Running Qwen3-30B-A3B on Ollama as well as MLX showed that "thinking off" is not portable: on MLX the model
+announces actions and stops (19/29 on the agent suite), on Ollama it reasons in the content (27/29, 6x slower). At a
+matched configuration it is not distinguishable from gemma4. See [findings](docs/findings-runtime-confound.md); earlier
+Qwen3 conclusions are corrected there.
+
 ## Injection follow-up
 A provenance guard mode, a mid-task injection suite and an 8-payload red-team sweep were added
 ([findings](docs/findings-injection.md)). No model attempted an injected action, so the new guard's benefit is
