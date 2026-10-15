@@ -177,3 +177,27 @@ def test_golden_agent_cases_are_consistent_with_the_world():
             assert wanted["tool"] in {s.name for s in ShopWorld.specs}
             if wanted["tool"] == "get_product":
                 assert wanted["arguments"]["sku"] in skus
+
+
+def test_test_split_is_disjoint_from_validation_and_its_labels_match_the_world():
+    from collections import Counter
+
+    for name in ("extraction", "tool_call", "multi_extraction", "agent", "agent_security"):
+        cases = load_cases(Path(f"golden/{name}.jsonl"))
+        ids = Counter(c.id for c in cases)
+        assert max(ids.values()) == 1, f"duplicate ids in {name}"
+        validation = {c.messages[-1].content for c in cases if c.split == "validation"}
+        test = {c.messages[-1].content for c in cases if c.split == "test"}
+        assert test and not (validation & test), f"{name}: test prompts overlap validation"
+
+    totals = {
+        "O-1001": 114.5,
+        "O-1006": 118.0,
+        "O-1008": 503.0,
+        "O-1014": 517.0,
+        "O-1007": 45.0,
+        "O-1016": 49.0,
+    }
+    for order_id, expected in totals.items():
+        assert execute("get_order", order_id=order_id)["total"] == expected
+    assert totals["O-1001"] + totals["O-1008"] == 617.5

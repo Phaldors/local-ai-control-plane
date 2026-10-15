@@ -22,9 +22,10 @@ def baseline_key(meta: dict[str, Any]) -> str:
     guard = "on" if meta.get("guard") else "off"
     # max_tokens is deliberately not part of the identity: lowering it is a regression the
     # gate must catch against the same baseline, not a "new configuration" that escapes it.
+    split = meta.get("split", "validation")
     raw = (
         f"{meta['runtime']}__{meta['model'].split('/')[-1]}__{meta['suite']}"
-        f"__think-{think}__guard-{guard}"
+        f"__think-{think}__guard-{guard}" + ("" if split == "validation" else f"__split-{split}")
     )
     return re.sub(r"[^A-Za-z0-9_.-]", "_", raw)
 

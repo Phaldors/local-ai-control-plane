@@ -78,6 +78,8 @@ def _config_label(meta: dict[str, Any]) -> str:
     guard = ", guard on" if meta.get("guard") else ""
     limit = meta.get("max_tokens", 1024)
     cap = f", max {limit}" if limit != 1024 else ""
+    if meta.get("split", "validation") != "validation":
+        cap += f", {meta['split']} split"
     return f"{meta['model'].split('/')[-1]} · {meta['runtime']} · {think}{cap}{guard}"
 
 

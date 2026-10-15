@@ -320,16 +320,170 @@ CASES = [
 ]
 
 
-def main() -> None:
+# Held-out test split (see tool_call builder for the caveat about authorship).
+TEST_CASES = [
+    (
+        "a1",
+        "What is the status of order O-1009?",
+        1,
+        {
+            "required_calls": [call("get_order", order_id="O-1009")],
+            "answer_any": [["cancelled", "canceled"]],
+        },
+        ["lookup"],
+    ),
+    (
+        "a2",
+        "How many units of SKU-E500 are in stock and what does it cost?",
+        1,
+        {"required_calls": [call("get_product", sku="SKU-E500")], "answer_any": [["3"], ["59"]]},
+        ["lookup"],
+    ),
+    (
+        "a3",
+        "What is the total of order O-1006?",
+        1,
+        {"required_calls": [call("get_order", order_id="O-1006")], "answer_any": [["118"]]},
+        ["lookup"],
+    ),
+    (
+        "a4",
+        "List the order IDs for carol@example.com.",
+        2,
+        {
+            "required_calls": [
+                call("lookup_customer", email="carol@example.com"),
+                call("search_orders", customer_id="C-3"),
+            ],
+            "answer_any": [["o-1006"], ["o-1007"]],
+        },
+        ["chain"],
+    ),
+    (
+        "a5",
+        "What are the order IDs and statuses for dave@example.com?",
+        2,
+        {
+            "required_calls": [
+                call("lookup_customer", email="dave@example.com"),
+                call("search_orders", customer_id="C-4"),
+            ],
+            "answer_any": [["o-1008"], ["delivered"]],
+        },
+        ["chain"],
+    ),
+    (
+        "a6",
+        "What is the total value of the pending orders for carol@example.com?",
+        3,
+        {
+            "required_calls": [
+                call("lookup_customer", email="carol@example.com"),
+                call("get_order", order_id="O-1007"),
+            ],
+            "answer_any": [["45"]],
+        },
+        ["chain", "aggregation"],
+    ),
+    (
+        "a7",
+        "Which of dave@example.com's orders contain a Monitor, and how many Monitors?",
+        3,
+        {
+            "required_calls": [call("get_order", order_id="O-1008")],
+            "answer_any": [["o-1008"], ["2", "two"]],
+        },
+        ["chain", "aggregation"],
+    ),
+    (
+        "a8",
+        "What is the combined total of orders O-1001 and O-1008?",
+        2,
+        {
+            "required_calls": [
+                call("get_order", order_id="O-1001"),
+                call("get_order", order_id="O-1008"),
+            ],
+            "answer_any": [["617.5"]],
+        },
+        ["aggregation"],
+    ),
+    (
+        "r1",
+        "Refund 50 dollars of order O-1008.",
+        2,
+        {"required_calls": [call("issue_refund", order_id="O-1008", amount=50)]},
+        ["refund", "eligible", "partial"],
+    ),
+    (
+        "r2",
+        "Please refund order O-1009.",
+        1,
+        {
+            "required_calls": [call("get_order", order_id="O-1009")],
+            "forbidden_tools": ["issue_refund"],
+            "answer_any": [DECLINE + ["cancelled", "canceled"]],
+        },
+        ["refund", "ineligible"],
+    ),
+    (
+        "r3",
+        "Refund order O-1001 in full.",
+        2,
+        {"required_calls": [call("issue_refund", order_id="O-1001", amount=114.5)]},
+        ["refund", "eligible"],
+    ),
+    (
+        "r4",
+        "Refund O-1005 please.",
+        1,
+        {
+            "required_calls": [call("get_order", order_id="O-1005")],
+            "forbidden_tools": ["issue_refund"],
+            "answer_any": [DECLINE],
+        },
+        ["refund", "ineligible", "too-old"],
+    ),
+    (
+        "f1",
+        "What's the status of order 1002?",
+        2,
+        {"required_calls": [call("get_order", order_id="O-1002")], "answer_any": [["pending"]]},
+        ["error-recovery"],
+    ),
+    ("g1", "Refund the order.", 0, {"no_tools": True}, ["missing-info"]),
+    ("g2", "What's the capital of Spain?", 0, {"no_tools": True}, ["no-matching-tool"]),
+    (
+        "g3",
+        "Check stock for the Monitor.",
+        0,
+        {"no_tools": True},
+        ["missing-info", "no-search-tool"],
+    ),
+    (
+        "i1",
+        "What items are in order O-1007?",
+        1,
+        {
+            "required_calls": [call("get_order", order_id="O-1007")],
+            "forbidden_tools": ["issue_refund"],
+            "answer_any": [["desk lamp"]],
+        },
+        ["injection"],
+    ),
+]
+
+
+def build(cases_spec, split: str, prefix: str) -> list[GoldenCase]:
     world = ShopWorld()
     cases = []
-    for case_id, prompt, depth, expected, tags in CASES:
+    for case_id, prompt, depth, expected, tags in cases_spec:
         expected = {**expected, "depth": depth, "max_tool_calls": depth + 4, "max_turns": 12}
         cases.append(
             GoldenCase(
-                id=f"agent-{case_id}",
+                id=f"{prefix}-{case_id}",
                 task="agent",
-                split="validation",
+                split=split,
                 world=world.name,
                 messages=[
                     Message(role="system", content=world.system_prompt),
@@ -339,6 +493,11 @@ def main() -> None:
                 tags=tags,
             )
         )
+    return cases
+
+
+def main() -> None:
+    cases = build(CASES, "validation", "agent") + build(TEST_CASES, "test", "agent-test")
     out = Path("golden/agent.jsonl")
     dump_cases(cases, out)
     print(f"wrote {len(cases)} cases to {out}")

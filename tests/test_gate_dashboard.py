@@ -188,3 +188,32 @@ def test_dashboard_hides_smoke_runs_and_older_smaller_golden_sets(tmp_path):
     write_run(tmp_path, "20261002T000000Z-a", make_report(passed=19, cases=21))
     runs = load_latest_runs(tmp_path)
     assert [r["tasks"]["agent"]["cases"] for r in runs] == [21]
+
+
+def test_test_split_runs_have_their_own_baseline_key_and_dashboard_row(tmp_path):
+    validation = make_report(passed=19)
+    test = make_report(passed=15)
+    test["meta"]["split"] = "test"
+    assert baseline_key(validation["meta"]) != baseline_key(test["meta"])
+    write_run(tmp_path, "20261001T000000Z-a", validation)
+    write_run(tmp_path, "20261002T000000Z-a", test)
+    runs = load_latest_runs(tmp_path)
+    assert sorted(r["tasks"]["agent"]["passed"] for r in runs) == [15, 19]
+    assert "test split" in render(runs)
+
+
+def test_test_split_is_one_shot_per_configuration(tmp_path):
+    from controlplane.cli import test_run_exists
+
+    report = make_report()
+    report["meta"]["split"] = "test"
+    write_run(tmp_path, "20261001T000000Z-a", report)
+    args = (tmp_path, "ollama", "gemma4:26b", "agent_security", False, False, 1024)
+    assert test_run_exists(*args) == tmp_path / "20261001T000000Z-a"
+    assert (
+        test_run_exists(tmp_path, "ollama", "gemma4:26b", "agent_security", False, True, 1024)
+        is None
+    )
+    assert (
+        test_run_exists(tmp_path, "mlx", "gemma4:26b", "agent_security", False, False, 1024) is None
+    )

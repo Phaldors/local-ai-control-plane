@@ -236,23 +236,106 @@ CASES = [
 ]
 
 
-def main() -> None:
-    cases = []
-    for case_id, prompt, tool, args, tags in CASES:
-        cases.append(
-            GoldenCase(
-                id=f"tool-{case_id}",
-                task="tool_call",
-                split="validation",
-                messages=[
-                    Message(role="system", content=SYSTEM),
-                    Message(role="user", content=prompt),
-                ],
-                tools=TOOLS,
-                expected={"tool": tool, "arguments": args},
-                tags=tags,
-            )
+# Held-out test split: new prompts in the same categories, written after the validation
+# results were known (same author), so it is held out from tuning but not from the author.
+TEST_CASES = [
+    ("w1", "Is it sunny in Lisbon today?", "get_weather", {"city": "Lisbon"}, ["direct"]),
+    ("w2", "Bursa'da hava durumu nedir?", "get_weather", {"city": "Bursa"}, ["turkish"]),
+    ("w3", "what's the temperature like in Tokyo", "get_weather", {"city": "Tokyo"}, ["terse"]),
+    (
+        "o1",
+        "Pull up the orders for customer C-2210.",
+        "search_orders",
+        {"customer_id": "C-2210"},
+        ["direct"],
+    ),
+    (
+        "o2",
+        "Show C-48's delivered orders.",
+        "search_orders",
+        {"customer_id": "C-48", "status": "delivered"},
+        ["enum"],
+    ),
+    (
+        "o3",
+        "C-7 siparişlerinden bekleyenleri göster.",
+        "search_orders",
+        {"customer_id": "C-7", "status": "pending"},
+        ["turkish", "enum"],
+    ),
+    (
+        "t1",
+        "Open a low priority ticket: the footer link is broken.",
+        "create_ticket",
+        {"priority": "low"},
+        ["enum"],
+    ),
+    (
+        "t2",
+        "Please file a high priority ticket named 'Checkout fails on Safari'.",
+        "create_ticket",
+        {"title": "Checkout fails on Safari", "priority": "high"},
+        ["enum"],
+    ),
+    (
+        "c1",
+        "How much is 99 GBP in USD?",
+        "convert_currency",
+        {"amount": 99, "from_currency": "GBP", "to_currency": "USD"},
+        ["iso-code"],
+    ),
+    (
+        "c2",
+        "300 dolar kaç TL eder?",
+        "convert_currency",
+        {"amount": 300, "from_currency": "USD", "to_currency": "TRY"},
+        ["turkish", "iso-code"],
+    ),
+    ("m1", "Compute 48 * 12 - 7.", "calculator", {}, ["choice"]),
+    ("m2", "What's 18% of 2500?", "calculator", {}, ["choice"]),
+    ("n1", "Tell me a fun fact about octopuses.", None, {}, ["no-tool"]),
+    ("n2", "Cancel my subscription.", None, {}, ["no-tool", "no-matching-tool"]),
+    ("n3", "Create a ticket.", None, {}, ["no-tool", "missing-required-arg"]),
+    ("n4", "Convert 50 euros.", None, {}, ["no-tool", "missing-required-arg"]),
+    ("n5", "Explain the difference between TCP and UDP.", None, {}, ["no-tool", "decoy"]),
+    ("n6", "What's the weather like?", None, {}, ["no-tool", "missing-required-arg"]),
+    (
+        "h1",
+        "Urgent ticket please, the payment gateway is down: 'Gateway down'.",
+        "create_ticket",
+        {"priority": "high"},
+        ["enum-synonym"],
+    ),
+    (
+        "h2",
+        "Convert 2,400.75 CAD to EUR.",
+        "convert_currency",
+        {"amount": 2400.75, "from_currency": "CAD", "to_currency": "EUR"},
+        ["number-format"],
+    ),
+]
+
+
+def build(cases_spec, split: str, prefix: str) -> list[GoldenCase]:
+    return [
+        GoldenCase(
+            id=f"{prefix}-{case_id}",
+            task="tool_call",
+            split=split,
+            messages=[
+                Message(role="system", content=SYSTEM),
+                Message(role="user", content=prompt),
+            ],
+            tools=TOOLS,
+            expected={"tool": tool, "arguments": args},
+            tags=tags,
         )
+        for case_id, prompt, tool, args, tags in cases_spec
+    ]
+
+
+def main() -> None:
+    cases = build(CASES, "validation", "tool") + build(TEST_CASES, "test", "tool-test")
     out = Path("golden/tool_call.jsonl")
     dump_cases(cases, out)
     print(f"wrote {len(cases)} cases to {out}")

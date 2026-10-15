@@ -51,8 +51,9 @@ def _is_ambiguous_item(item: dict) -> bool:
     return "sub" in item or price.lstrip().startswith("-")
 
 
-def main(limit: int = 50) -> None:
-    dataset = load_dataset("naver-clova-ix/cord-v2", split="validation").remove_columns("image")
+def build_split(split: str, limit: int) -> list[GoldenCase]:
+    dataset = load_dataset("naver-clova-ix/cord-v2", split=split).remove_columns("image")
+    prefix = "val" if split == "validation" else "test"
     cases: list[GoldenCase] = []
     for index, row in enumerate(dataset):
         gt = json.loads(row["ground_truth"])
@@ -71,15 +72,16 @@ def main(limit: int = 50) -> None:
         # - subtotal: when it equals the total the receipt prints no distinct subtotal.
         # - item_count: menu entries with modifiers ("sub") or discount lines make the
         #   count convention-dependent.
+        # The same rules are applied to the test split; no rule was tuned on test data.
         if subtotal is None or _digits(subtotal) != _digits(total):
             expected["subtotal_price"] = subtotal
         if isinstance(menu, list) and not any(_is_ambiguous_item(item) for item in menu):
             expected["item_count"] = len(menu)
         cases.append(
             GoldenCase(
-                id=f"cord-val-{index:03d}",
+                id=f"cord-{prefix}-{index:03d}",
                 task="extraction",
-                split="validation",
+                split=split,
                 messages=[
                     Message(role="system", content=SYSTEM),
                     Message(role="user", content=text),
@@ -91,6 +93,11 @@ def main(limit: int = 50) -> None:
         )
         if len(cases) >= limit:
             break
+    return cases
+
+
+def main(limit: int = 50) -> None:
+    cases = build_split("validation", limit) + build_split("test", limit)
     out = Path("golden/extraction.jsonl")
     dump_cases(cases, out)
     print(f"wrote {len(cases)} cases to {out}")

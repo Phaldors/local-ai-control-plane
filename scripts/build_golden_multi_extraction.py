@@ -45,8 +45,8 @@ SIZES = (2, 4, 8, 16)
 CASES_PER_SIZE = 10
 
 
-def main() -> None:
-    dataset = load_dataset("naver-clova-ix/cord-v2", split="validation").remove_columns("image")
+def build_split(split: str, seed: int) -> list[GoldenCase]:
+    dataset = load_dataset("naver-clova-ix/cord-v2", split=split).remove_columns("image")
     pool = []
     for index, row in enumerate(dataset):
         gt = json.loads(row["ground_truth"])
@@ -55,16 +55,17 @@ def main() -> None:
         if total and text.strip():
             pool.append((index, text, total))
 
-    rng = random.Random(0)
+    prefix = "multi" if split == "validation" else "multi-test"
+    rng = random.Random(seed)
     cases: list[GoldenCase] = []
     for size in SIZES:
         for k in range(CASES_PER_SIZE):
             picked = rng.sample(pool, size)
             cases.append(
                 GoldenCase(
-                    id=f"multi-n{size:02d}-{k:02d}",
+                    id=f"{prefix}-n{size:02d}-{k:02d}",
                     task="multi_extraction",
-                    split="validation",
+                    split=split,
                     messages=[
                         Message(role="system", content=SYSTEM),
                         Message(role="user", content=SEPARATOR.join(t for _, t, _ in picked)),
@@ -74,6 +75,11 @@ def main() -> None:
                     tags=["cord-v2", f"n={size}"],
                 )
             )
+    return cases
+
+
+def main() -> None:
+    cases = build_split("validation", seed=0) + build_split("test", seed=1)
     out = Path("golden/multi_extraction.jsonl")
     dump_cases(cases, out)
     print(f"wrote {len(cases)} cases to {out}")
