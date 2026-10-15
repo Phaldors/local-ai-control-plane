@@ -10,6 +10,7 @@ from controlplane.runtimes.ollama import OllamaClient
 SUITES = {
     "extraction": Path("golden/extraction.jsonl"),
     "tool_call": Path("golden/tool_call.jsonl"),
+    "multi_extraction": Path("golden/multi_extraction.jsonl"),
 }
 
 

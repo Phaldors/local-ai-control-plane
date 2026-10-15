@@ -213,3 +213,15 @@ def test_multi_extraction_wrong_value_partial_credit():
     out = score_multi_extraction(multi_case(), result(multi_output("10,000", "99,000", "30,000")))
     assert out.failure == "wrong_value"
     assert abs(out.detail["item_accuracy"] - 2 / 3) < 1e-9
+
+
+def test_every_golden_file_has_a_cli_suite_and_loads():
+    from pathlib import Path
+
+    from controlplane.cli import SUITES
+    from controlplane.evals.contract import load_cases
+
+    on_disk = {p.stem for p in Path("golden").glob("*.jsonl")}
+    assert on_disk == set(SUITES)
+    for path in SUITES.values():
+        assert load_cases(path)
