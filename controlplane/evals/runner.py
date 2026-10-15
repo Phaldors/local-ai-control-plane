@@ -92,12 +92,15 @@ def summarize(cases: list[GoldenCase], outcomes: list[CaseOutcome]) -> dict:
                 for name, ok in item.detail.get("fields", {}).items():
                     fields[name].append(ok)
             summary["json_valid_rate"] = sum(
-                1 for i in items if i.failure not in ("invalid_json", "transport_error")
+                1
+                for i in items
+                if i.failure not in ("invalid_json", "truncated", "transport_error")
             ) / len(items)
             summary["schema_valid_rate"] = sum(
                 1
                 for i in items
-                if i.failure not in ("invalid_json", "schema_invalid", "transport_error")
+                if i.failure
+                not in ("invalid_json", "truncated", "schema_invalid", "transport_error")
             ) / len(items)
             summary["field_accuracy"] = {k: sum(v) / len(v) for k, v in fields.items()}
         tasks[task] = summary
