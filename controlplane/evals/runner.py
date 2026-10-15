@@ -104,6 +104,19 @@ def summarize(cases: list[GoldenCase], outcomes: list[CaseOutcome]) -> dict:
                 not in ("invalid_json", "truncated", "schema_invalid", "transport_error")
             ) / len(items)
             summary["field_accuracy"] = {k: sum(v) / len(v) for k, v in fields.items()}
+        if task == "multi_extraction":
+            by_n: dict[int, list[CaseOutcome]] = defaultdict(list)
+            for item in items:
+                if "n" in item.detail:
+                    by_n[item.detail["n"]].append(item)
+            summary["by_receipt_count"] = {
+                str(n): {
+                    "cases": len(group),
+                    "pass_rate": sum(1 for g in group if g.passed) / len(group),
+                    "item_accuracy": statistics.fmean(g.detail["item_accuracy"] for g in group),
+                }
+                for n, group in sorted(by_n.items())
+            }
         tasks[task] = summary
     return tasks
 
@@ -141,6 +154,12 @@ def render_markdown(meta: dict, tasks: dict) -> str:
                 f"schema valid: {s['schema_valid_rate']:.0%}"
             )
             lines.append(f"- field accuracy: {s['field_accuracy']}")
+        if task == "multi_extraction":
+            for n, info in s["by_receipt_count"].items():
+                lines.append(
+                    f"- {n} receipts: pass {info['pass_rate']:.0%}, "
+                    f"per-receipt accuracy {info['item_accuracy']:.0%} ({info['cases']} cases)"
+                )
         lines += ["", "### Failures (reported, never hidden)", ""]
         if not s["failures"]:
             lines.append("None.")

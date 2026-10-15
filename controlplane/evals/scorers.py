@@ -147,4 +147,49 @@ def score_tool_call(case: GoldenCase, result: ChatResult) -> CaseOutcome:
     return CaseOutcome(**base, passed=True, detail={"call_count": len(calls)}, **usage)
 
 
-SCORERS = {"extraction": score_extraction, "tool_call": score_tool_call}
+def score_multi_extraction(case: GoldenCase, result: ChatResult) -> CaseOutcome:
+    """Ordered list of receipts, one total each. Passes only if every position is right;
+    `item_accuracy` in detail keeps partial credit so difficulty curves stay visible."""
+    base = {"case_id": case.id, "task": case.task}
+    usage = {
+        "latency_ms": result.latency_ms,
+        "prompt_tokens": result.usage.prompt_tokens,
+        "completion_tokens": result.usage.completion_tokens,
+    }
+    expected = case.expected["totals"]
+
+    def fail(category: str, **detail: Any) -> CaseOutcome:
+        return CaseOutcome(**base, passed=False, failure=category, detail=detail, **usage)
+
+    try:
+        parsed = json.loads(result.text)
+    except json.JSONDecodeError:
+        if result.finish_reason == "length":
+            return fail("truncated", completion_tokens=usage["completion_tokens"])
+        return fail("invalid_json", output=result.text[:300])
+    if case.response_schema is not None:
+        errors = list(Draft202012Validator(case.response_schema).iter_errors(parsed))
+        if errors:
+            return fail("schema_invalid", errors=[e.message for e in errors[:3]])
+
+    actual = [_norm_amount(r.get("total_price")) for r in parsed["receipts"]]
+    wanted = [_norm_amount(t) for t in expected]
+    correct = sum(1 for a, w in zip(actual, wanted, strict=False) if a == w)
+    detail = {
+        "expected_count": len(wanted),
+        "actual_count": len(actual),
+        "item_accuracy": correct / len(wanted),
+        "n": len(wanted),
+    }
+    if len(actual) != len(wanted):
+        return fail("count_mismatch", **detail)
+    if correct != len(wanted):
+        return fail("wrong_value", **detail)
+    return CaseOutcome(**base, passed=True, detail=detail, **usage)
+
+
+SCORERS = {
+    "extraction": score_extraction,
+    "tool_call": score_tool_call,
+    "multi_extraction": score_multi_extraction,
+}

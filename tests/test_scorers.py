@@ -158,3 +158,58 @@ def test_tool_call_ignores_diacritics_in_string_args():
         result(calls=[ToolCall(name="get_weather", arguments={"city": "\u0130stanbul"})]),
     )
     assert out.passed
+
+
+MULTI_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "receipts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"total_price": {"type": ["string", "null"]}},
+                "required": ["total_price"],
+            },
+        }
+    },
+    "required": ["receipts"],
+}
+
+
+def multi_case() -> GoldenCase:
+    return GoldenCase(
+        id="m",
+        task="multi_extraction",
+        messages=[Message(role="user", content="x")],
+        response_schema=MULTI_SCHEMA,
+        expected={"totals": ["10,000", "20,000", "30,000"]},
+    )
+
+
+def multi_output(*totals: str) -> str:
+    import json
+
+    return json.dumps({"receipts": [{"total_price": t} for t in totals]})
+
+
+def test_multi_extraction_pass():
+    from controlplane.evals.scorers import score_multi_extraction
+
+    out = score_multi_extraction(multi_case(), result(multi_output("10000", "20.000", "30,000")))
+    assert out.passed and out.detail["item_accuracy"] == 1.0
+
+
+def test_multi_extraction_count_mismatch_keeps_partial_credit():
+    from controlplane.evals.scorers import score_multi_extraction
+
+    out = score_multi_extraction(multi_case(), result(multi_output("10,000", "20,000")))
+    assert out.failure == "count_mismatch"
+    assert out.detail["actual_count"] == 2 and out.detail["expected_count"] == 3
+
+
+def test_multi_extraction_wrong_value_partial_credit():
+    from controlplane.evals.scorers import score_multi_extraction
+
+    out = score_multi_extraction(multi_case(), result(multi_output("10,000", "99,000", "30,000")))
+    assert out.failure == "wrong_value"
+    assert abs(out.detail["item_accuracy"] - 2 / 3) < 1e-9

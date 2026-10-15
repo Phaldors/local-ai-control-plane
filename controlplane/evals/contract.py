@@ -15,7 +15,7 @@ from controlplane.types import Message, ToolSpec
 
 class GoldenCase(BaseModel):
     id: str
-    task: Literal["extraction", "tool_call"]
+    task: Literal["extraction", "tool_call", "multi_extraction"]
     split: Literal["validation", "test"] = "validation"
     messages: list[Message]
     response_schema: dict[str, Any] | None = None
@@ -43,6 +43,14 @@ EXTRACTION_FAILURES = (
     "truncated",
     "invalid_json",
     "schema_invalid",
+    "wrong_value",
+)
+MULTI_EXTRACTION_FAILURES = (
+    "transport_error",
+    "truncated",
+    "invalid_json",
+    "schema_invalid",
+    "count_mismatch",
     "wrong_value",
 )
 TOOL_CALL_FAILURES = (
