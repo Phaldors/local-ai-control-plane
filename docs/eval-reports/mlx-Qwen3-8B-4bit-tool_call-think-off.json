@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "run_id": "20261015T164301Z-mlx-mlx-community_Qwen3-8B-4bit",
+    "runtime": "mlx",
+    "model": "mlx-community/Qwen3-8B-4bit",
+    "suite": "tool_call",
+    "split": "validation",
+    "max_tokens": 1024,
+    "think": false,
+    "case_count": 25,
+    "commit": "4fe530a",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "tool_call": {
+      "cases": 25,
+      "passed": 22,
+      "pass_rate": 0.88,
+      "failures": {
+        "no_call": {
+          "count": 3,
+          "case_ids": [
+            "tool-o1",
+            "tool-o4",
+            "tool-m3"
+          ]
+        }
+      },
+      "latency_ms_p50": 698.6455420001221,
+      "latency_ms_p95": 1449.2682919999424,
+      "completion_tokens_mean": 32.52
+    }
+  }
+}

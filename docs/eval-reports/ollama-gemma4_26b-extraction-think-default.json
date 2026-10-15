@@ -1,0 +1,60 @@
+{
+  "meta": {
+    "run_id": "20261015T163019Z-ollama-gemma4_26b",
+    "runtime": "ollama",
+    "model": "gemma4:26b",
+    "suite": "extraction",
+    "split": "validation",
+    "max_tokens": 1024,
+    "think": null,
+    "case_count": 50,
+    "commit": "2225240",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "extraction": {
+      "cases": 50,
+      "passed": 33,
+      "pass_rate": 0.66,
+      "failures": {
+        "truncated": {
+          "count": 15,
+          "case_ids": [
+            "cord-val-004",
+            "cord-val-005",
+            "cord-val-007",
+            "cord-val-010",
+            "cord-val-012",
+            "cord-val-015",
+            "cord-val-018",
+            "cord-val-021",
+            "cord-val-022",
+            "cord-val-026",
+            "cord-val-030",
+            "cord-val-031",
+            "cord-val-036",
+            "cord-val-041",
+            "cord-val-046"
+          ]
+        },
+        "wrong_value": {
+          "count": 2,
+          "case_ids": [
+            "cord-val-044",
+            "cord-val-047"
+          ]
+        }
+      },
+      "latency_ms_p50": 8966.627000000244,
+      "latency_ms_p95": 11394.13712500027,
+      "completion_tokens_mean": 848.88,
+      "json_valid_rate": 1.0,
+      "schema_valid_rate": 1.0,
+      "field_accuracy": {
+        "total_price": 0.9714285714285714,
+        "subtotal_price": 0.9428571428571428,
+        "item_count": 0.9714285714285714
+      }
+    }
+  }
+}

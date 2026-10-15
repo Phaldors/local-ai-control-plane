@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "run_id": "20261015T163848Z-ollama-gemma4_26b",
+    "runtime": "ollama",
+    "model": "gemma4:26b",
+    "suite": "tool_call",
+    "split": "validation",
+    "max_tokens": 1024,
+    "think": false,
+    "case_count": 25,
+    "commit": "2225240",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "tool_call": {
+      "cases": 25,
+      "passed": 25,
+      "pass_rate": 1.0,
+      "failures": {},
+      "latency_ms_p50": 527.313791999859,
+      "latency_ms_p95": 816.4781249997759,
+      "completion_tokens_mean": 34.6
+    }
+  }
+}
