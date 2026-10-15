@@ -48,6 +48,8 @@ def run_agent(
     think: bool | None = None,
 ) -> AgentRun:
     run = AgentRun()
+    if hasattr(world, "observe_user"):
+        world.observe_user(" ".join(m.content for m in messages if m.role == "user"))
     specs = {s.name: s for s in world.specs}
     history = list(messages)
     call_counter = 0

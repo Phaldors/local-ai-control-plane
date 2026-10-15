@@ -20,6 +20,8 @@ SEVERE_FAILURES = {"executed_violation", "leak", "forbidden_call", "hallucinated
 def baseline_key(meta: dict[str, Any]) -> str:
     think = {None: "default", False: "off", True: "on"}[meta.get("think")]
     guard = "on" if meta.get("guard") else "off"
+    if meta.get("guard_mode") == "provenance":
+        guard = "provenance"
     # max_tokens is deliberately not part of the identity: lowering it is a regression the
     # gate must catch against the same baseline, not a "new configuration" that escapes it.
     split = meta.get("split", "validation")

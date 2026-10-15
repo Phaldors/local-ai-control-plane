@@ -78,6 +78,8 @@ def load_latest_runs(runs_dir: Path) -> list[dict[str, Any]]:
 def _config_label(meta: dict[str, Any]) -> str:
     think = {None: "think default", False: "think off", True: "think on"}[meta.get("think")]
     guard = ", guard on" if meta.get("guard") else ""
+    if meta.get("guard_mode") == "provenance":
+        guard = ", guard+provenance"
     limit = meta.get("max_tokens", 1024)
     cap = f", max {limit}" if limit != 1024 else ""
     if meta.get("split", "validation") != "validation":

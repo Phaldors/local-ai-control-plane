@@ -38,15 +38,25 @@ def _percentile(values: list[float], pct: float) -> float | None:
     return ordered[index]
 
 
+def guard_mode(guard: bool | str) -> str:
+    """Accepts the old boolean as well: True means the rule-based guard."""
+    if guard is True:
+        return "rules"
+    return "off" if guard is False else guard
+
+
 def make_world(
-    case: GoldenCase, guard: bool, audit: AuditLog | None = None
+    case: GoldenCase, guard: bool | str, audit: AuditLog | None = None
 ) -> ShopWorld | GuardedWorld:
     world = ShopWorld()
-    if not guard:
+    mode = guard_mode(guard)
+    if mode == "off":
         return world
     return GuardedWorld(
         world,
-        PolicyGuard(auth_customer_id=case.expected.get("auth_customer")),
+        PolicyGuard(
+            auth_customer_id=case.expected.get("auth_customer"), provenance=mode == "provenance"
+        ),
         audit=audit,
         case_id=case.id,
     )
@@ -58,7 +68,7 @@ def run_cases(
     cases: list[GoldenCase],
     max_tokens: int = 1024,
     think: bool | None = None,
-    guard: bool = False,
+    guard: bool | str = False,
     audit: AuditLog | None = None,
 ) -> list[CaseOutcome]:
     outcomes = []
@@ -210,7 +220,8 @@ def render_markdown(meta: dict, tasks: dict) -> str:
         "",
         f"- runtime: `{meta['runtime']}`, model: `{meta['model']}`",
         f"- suite: `{meta['suite']}` ({meta['case_count']} cases, split `{meta['split']}`)",
-        f"- max_tokens: {meta['max_tokens']}, think: {meta['think']}, guard: {meta['guard']}",
+        f"- max_tokens: {meta['max_tokens']}, think: {meta['think']}, "
+        f"guard: {meta.get('guard_mode', meta['guard'])}",
         f"- resident model memory (approx): {_mb(meta['model_memory_mb'])}",
         f"- commit: `{meta['commit']}`, host: {meta['host']}",
         "",
@@ -266,7 +277,7 @@ def run_eval(
     out_root: Path,
     max_tokens: int = 1024,
     think: bool | None = None,
-    guard: bool = False,
+    guard: bool | str = False,
 ) -> Path:
     run_id = (
         datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -275,7 +286,7 @@ def run_eval(
     run_dir = out_root / run_id
     traced = TracedClient(client, TraceSink(run_dir / "traces.jsonl"), run_id, tag=suite)
 
-    audit = AuditLog(run_dir / "audit.jsonl") if guard else None
+    audit = AuditLog(run_dir / "audit.jsonl") if guard_mode(guard) != "off" else None
     outcomes = run_cases(
         traced, model, cases, max_tokens=max_tokens, think=think, guard=guard, audit=audit
     )
@@ -288,7 +299,8 @@ def run_eval(
         "split": split,
         "max_tokens": max_tokens,
         "think": think,
-        "guard": guard,
+        "guard": guard_mode(guard) != "off",
+        "guard_mode": guard_mode(guard),
         "case_count": len(cases),
         "model_memory_mb": runtime_memory_mb(client.runtime, model),
         "commit": _git_commit(),

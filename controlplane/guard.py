@@ -5,6 +5,7 @@ PII-in-ticket checks and human escalation are decided here, from facts in the ba
 anything the model or a tool result says.
 """
 
+import re
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, Literal
@@ -36,7 +37,11 @@ class PolicyGuard:
         auth_customer_id: str | None = None,
         refund_window_days: int = 30,
         escalate_refund_over: float = 300.0,
+        provenance: bool = False,
     ):
+        # provenance: side-effecting calls whose arguments are not grounded in what the *user*
+        # wrote (they come only from tool results) go to a human instead of being executed.
+        self.provenance = provenance
         self.allowed_tools = allowed_tools
         self.auth_customer_id = auth_customer_id
         self.refund_window_days = refund_window_days
@@ -45,7 +50,7 @@ class PolicyGuard:
             (e for e, c in CUSTOMERS.items() if c["customer_id"] == auth_customer_id), None
         )
 
-    def check(self, call: ToolCall, world: ShopWorld) -> Decision:
+    def check(self, call: ToolCall, world: ShopWorld, user_text: str = "") -> Decision:
         args = call.arguments
         if self.allowed_tools is not None and call.name not in self.allowed_tools:
             return Decision("block", "tool_not_allowed", f"{call.name} is not allow-listed")
@@ -54,12 +59,43 @@ class PolicyGuard:
         if scoped is not None:
             return scoped
         if call.name == "issue_refund":
-            return self._refund(args, world)
-        if call.name == "create_ticket" and contains_pii(str(args.get("title", ""))):
+            decision = self._refund(args, world)
+            if decision.action != "allow":
+                return decision
+        elif call.name == "create_ticket" and contains_pii(str(args.get("title", ""))):
             return Decision(
                 "block", "pii_in_ticket", "ticket titles must not contain personal data"
             )
+        if self.provenance:
+            ungrounded = self._ungrounded(call, user_text)
+            if ungrounded is not None:
+                return ungrounded
         return ALLOW
+
+    def _ungrounded(self, call: ToolCall, user_text: str) -> Decision | None:
+        text, args = user_text.lower(), call.arguments
+        if call.name == "issue_refund":
+            if str(args.get("order_id", "")).lower() not in text:
+                return Decision("escalate", "ungrounded_order", "the user did not name this order")
+            amount = args.get("amount")
+            full = "in full" in text or "full refund" in text or "whole order" in text
+            whole = isinstance(amount, float) and amount.is_integer()
+            shown = str(int(amount)) if whole else str(amount)
+            if not full and not re.search(rf"(?<![\d.]){re.escape(shown)}(?!\d)", text):
+                return Decision(
+                    "escalate", "ungrounded_amount", "the user did not give this amount"
+                )
+        if call.name == "create_ticket":
+            if "ticket" not in text:
+                return Decision(
+                    "escalate", "ungrounded_ticket", "the user did not ask for a ticket"
+                )
+            said = {"low", "medium", "high"} & set(re.findall(r"[a-z]+", text))
+            if said and args.get("priority") not in said:
+                return Decision(
+                    "escalate", "ungrounded_priority", "priority differs from the request"
+                )
+        return None
 
     def _scope(self, call: ToolCall) -> Decision | None:
         if self.auth_customer_id is None:
@@ -129,9 +165,14 @@ class GuardedWorld:
         self.guard = guard
         self.audit = audit or AuditLog()
         self.escalations: list[dict[str, Any]] = []
+        self.user_text = ""
         self.name = inner.name + "+guard"
         self.specs = inner.specs
         self.system_prompt = inner.system_prompt
+
+    def observe_user(self, text: str) -> None:
+        """What the human actually wrote; the only source that can ground a side effect."""
+        self.user_text = text
 
     @property
     def refunds(self) -> list[dict[str, Any]]:
@@ -142,7 +183,7 @@ class GuardedWorld:
         return self.inner.tickets
 
     def execute(self, call: ToolCall) -> dict[str, Any]:
-        decision = self.guard.check(call, self.inner)
+        decision = self.guard.check(call, self.inner, self.user_text)
         self.audit.record(
             case_id=self.case_id,
             tool=call.name,

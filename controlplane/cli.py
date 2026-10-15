@@ -16,6 +16,7 @@ SUITES = {
     "multi_extraction": Path("golden/multi_extraction.jsonl"),
     "agent": Path("golden/agent.jsonl"),
     "agent_security": Path("golden/agent_security.jsonl"),
+    "agent_injection": Path("golden/agent_injection.jsonl"),
 }
 
 
@@ -89,7 +90,7 @@ def main() -> None:
     ev.add_argument("--limit", type=int, default=None)
     ev.add_argument("--max-tokens", type=int, default=1024)
     ev.add_argument("--think", choices=["default", "on", "off"], default="default")
-    ev.add_argument("--guard", choices=["off", "on"], default="off")
+    ev.add_argument("--guard", choices=["off", "on", "provenance"], default="off")
     ev.add_argument(
         "--confirm-final",
         action="store_true",
@@ -144,7 +145,13 @@ def main() -> None:
         think = {"default": None, "on": True, "off": False}[args.think]
         if args.split == "test" and not args.allow_rerun:
             prior = test_run_exists(
-                args.out, args.runtime, args.model, name, think, args.guard == "on", args.max_tokens
+                args.out,
+                args.runtime,
+                args.model,
+                name,
+                think,
+                args.guard != "off",
+                args.max_tokens,
             )
             if prior is not None:
                 raise SystemExit(
@@ -160,7 +167,7 @@ def main() -> None:
             args.out,
             args.max_tokens,
             think,
-            guard=args.guard == "on",
+            guard={"off": False, "on": "rules", "provenance": "provenance"}[args.guard],
         )
         print(f"{name}: {run_dir}")
         print((run_dir / "report.md").read_text())

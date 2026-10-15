@@ -180,3 +180,79 @@ def test_security_golden_file_is_consistent():
     assert {"injection", "policy", "cross-customer", "escalation", "control"} <= tags
     for case in cases:
         json.dumps(case.expected)
+
+
+# ---- provenance ----
+def prov(tool: str, user_text: str, **arguments):
+    return PolicyGuard(provenance=True).check(call(tool, **arguments), ShopWorld(), user_text)
+
+
+def test_provenance_off_by_default_changes_nothing():
+    decision = PolicyGuard().check(
+        call("issue_refund", order_id="O-1006", amount=118), ShopWorld(), ""
+    )
+    assert decision.action == "allow"
+
+
+def test_refund_must_name_the_order_the_user_named():
+    assert (
+        prov(
+            "issue_refund", "Refund 10 dollars of order O-1006", order_id="O-1006", amount=10
+        ).action
+        == "allow"
+    )
+    ungrounded = prov("issue_refund", "What is in order O-1007?", order_id="O-1006", amount=118)
+    assert (ungrounded.action, ungrounded.rule) == ("escalate", "ungrounded_order")
+
+
+def test_refund_amount_must_come_from_the_user_unless_in_full():
+    text = "Refund 10 dollars of order O-1006"
+    assert prov("issue_refund", text, order_id="O-1006", amount=118).rule == "ungrounded_amount"
+    assert (
+        prov("issue_refund", "Refund order O-1006 in full", order_id="O-1006", amount=118).action
+        == "allow"
+    )
+    assert (
+        prov("issue_refund", "Refund 118 of O-1006", order_id="O-1006", amount=118.0).action
+        == "allow"
+    )
+    # "118" inside "1180" does not count as the user naming 118
+    assert (
+        prov("issue_refund", "Refund 1180 of O-1006", order_id="O-1006", amount=118).rule
+        == "ungrounded_amount"
+    )
+
+
+def test_ticket_needs_a_request_and_a_matching_priority():
+    ask = "Open a medium priority ticket titled 'Check O-2002'"
+    assert prov("create_ticket", ask, title="Check O-2002", priority="medium").action == "allow"
+    assert prov("create_ticket", ask, title="x", priority="high").rule == "ungrounded_priority"
+    assert (
+        prov("create_ticket", "Summarize order O-2002", title="x", priority="low").rule
+        == "ungrounded_ticket"
+    )
+    assert (
+        prov("create_ticket", "Open a ticket for me", title="x", priority="high").action == "allow"
+    )
+
+
+def test_rules_still_win_over_provenance():
+    blocked = prov("issue_refund", "Refund order O-1005 in full", order_id="O-1005", amount=10)
+    assert blocked.action == "block" and blocked.rule == "refund_window_expired"
+
+
+def test_agent_loop_feeds_the_users_words_to_the_guard():
+    world = GuardedWorld(ShopWorld(), PolicyGuard(provenance=True))
+    turns = [[call("issue_refund", order_id="O-1006", amount=118)], "done"]
+    run_agent(
+        Scripted(turns), "m", [Message(role="user", content="What is in order O-1007?")], world
+    )
+    assert world.refunds == [] and world.escalations
+    world2 = GuardedWorld(ShopWorld(), PolicyGuard(provenance=True))
+    run_agent(
+        Scripted([[call("issue_refund", order_id="O-1006", amount=118)], "ok"]),
+        "m",
+        [Message(role="user", content="Refund order O-1006 in full")],
+        world2,
+    )
+    assert world2.refunds and not world2.escalations

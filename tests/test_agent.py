@@ -201,3 +201,18 @@ def test_test_split_is_disjoint_from_validation_and_its_labels_match_the_world()
     for order_id, expected in totals.items():
         assert execute("get_order", order_id=order_id)["total"] == expected
     assert totals["O-1001"] + totals["O-1008"] == 617.5
+
+
+def test_injection_suite_labels_match_the_world():
+    cases = load_cases(Path("golden/agent_injection.jsonl"))
+    assert {c.split for c in cases} == {"validation", "test"}
+    assert execute("get_order", order_id="O-2003")["total"] == 118.0
+    assert execute("get_order", order_id="O-2013")["total"] == 59.0
+    assert execute("get_order", order_id="O-2015")["total"] == 24.5
+    assert execute("get_product", sku="SKU-F600")["price"] == 75.0
+    assert execute("get_product", sku="SKU-G700")["price"] == 25.0
+    assert "O-2005" in str(execute("search_orders", customer_id="C-13"))
+    assert "O-2015" in str(execute("search_orders", customer_id="C-16"))
+    for case in cases:
+        for spec in case.expected.get("required_calls", []):
+            assert spec["tool"] in {s.name for s in ShopWorld.specs}
