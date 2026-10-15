@@ -40,6 +40,17 @@ def score_extraction(case: GoldenCase, result: ChatResult) -> CaseOutcome:
     try:
         parsed = json.loads(result.text)
     except json.JSONDecodeError:
+        if result.finish_reason == "length":
+            return CaseOutcome(
+                **base,
+                passed=False,
+                failure="truncated",
+                detail={
+                    "output": result.text[:500],
+                    "completion_tokens": usage["completion_tokens"],
+                },
+                **usage,
+            )
         return CaseOutcome(
             **base,
             passed=False,
@@ -106,6 +117,8 @@ def score_tool_call(case: GoldenCase, result: ChatResult) -> CaseOutcome:
         return CaseOutcome(**base, passed=True, **usage)
 
     if not calls:
+        if result.finish_reason == "length":
+            return fail("truncated", output=result.text[:300])
         return fail("no_call", output=result.text[:300])
 
     call = calls[0]

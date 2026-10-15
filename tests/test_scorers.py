@@ -134,3 +134,19 @@ def test_tool_call_wrong_args():
         result(calls=[ToolCall(name="get_weather", arguments={"city": "Izmir"})]),
     )
     assert out.failure == "wrong_args"
+
+
+def test_extraction_truncation_is_its_own_category():
+    truncated = ChatResult(
+        runtime="fake", model="m", text="", latency_ms=1.0, finish_reason="length"
+    )
+    assert score_extraction(extraction_case(), truncated).failure == "truncated"
+
+
+def test_tool_call_truncation_is_its_own_category():
+    truncated = ChatResult(
+        runtime="fake", model="m", text="", latency_ms=1.0, finish_reason="length"
+    )
+    assert (
+        score_tool_call(tool_case("get_weather", {"city": "X"}), truncated).failure == "truncated"
+    )

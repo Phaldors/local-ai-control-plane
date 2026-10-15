@@ -27,6 +27,9 @@ class ChatRequest(BaseModel):
     max_tokens: int = 1024
     temperature: float = 0.0
     seed: int = 0
+    # None = runtime default. Thinking models (e.g. gemma4) spend hidden tokens
+    # before answering, which changes latency and can exhaust max_tokens.
+    think: bool | None = None
 
 
 class Usage(BaseModel):
@@ -47,6 +50,8 @@ class ChatResult(BaseModel):
     schema_enforced: bool = False
     # Runtime-reported generation speed when available; None means unknown.
     generation_tps: float | None = None
+    # "stop" = finished normally, "length" = hit max_tokens (possibly truncated).
+    finish_reason: str | None = None
 
 
 class RuntimeError_(Exception):

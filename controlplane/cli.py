@@ -30,6 +30,8 @@ def main() -> None:
     ev.add_argument("--suite", choices=[*SUITES, "all"], default="all")
     ev.add_argument("--split", choices=["validation", "test"], default="validation")
     ev.add_argument("--limit", type=int, default=None)
+    ev.add_argument("--max-tokens", type=int, default=1024)
+    ev.add_argument("--think", choices=["default", "on", "off"], default="default")
     ev.add_argument("--base-url", default=None)
     ev.add_argument("--out", type=Path, default=Path("runs"))
     args = parser.parse_args()
@@ -43,7 +45,10 @@ def main() -> None:
         cases = load_cases(SUITES[name], split=args.split)
         if args.limit:
             cases = cases[: args.limit]
-        run_dir = run_eval(client, args.model, cases, name, args.split, args.out)
+        think = {"default": None, "on": True, "off": False}[args.think]
+        run_dir = run_eval(
+            client, args.model, cases, name, args.split, args.out, args.max_tokens, think
+        )
         print(f"{name}: {run_dir}")
         print((run_dir / "report.md").read_text())
 

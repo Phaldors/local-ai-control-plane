@@ -27,6 +27,8 @@ class OllamaClient:
                 "num_predict": request.max_tokens,
             },
         }
+        if request.think is not None:
+            body["think"] = request.think
         if request.response_schema is not None:
             body["format"] = request.response_schema
         if request.tools:
@@ -72,5 +74,6 @@ class OllamaClient:
             ),
             latency_ms=latency_ms,
             schema_enforced=request.response_schema is not None,
+            finish_reason=data.get("done_reason"),
             generation_tps=(eval_count / (eval_duration_ns / 1e9)) if eval_duration_ns else None,
         )

@@ -47,6 +47,18 @@ def test_ollama_parses_tool_calls_usage_and_tps():
     assert out.generation_tps == 20.0
 
 
+def test_ollama_sends_think_flag_and_reports_finish_reason():
+    seen = {}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(req.content)
+        return httpx.Response(200, json={"message": {"content": ""}, "done_reason": "length"})
+
+    out = OllamaClient(transport=httpx.MockTransport(handler)).chat(request(think=False))
+    assert seen["body"]["think"] is False
+    assert out.finish_reason == "length"
+
+
 def test_ollama_marks_schema_enforced_only_when_schema_sent():
     handler = lambda r: httpx.Response(200, json={"message": {"content": "{}"}})  # noqa: E731
     client = OllamaClient(transport=httpx.MockTransport(handler))

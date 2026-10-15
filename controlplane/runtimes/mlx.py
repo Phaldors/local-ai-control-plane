@@ -87,5 +87,6 @@ class MLXClient:
             ),
             latency_ms=latency_ms,
             schema_enforced=False,
+            finish_reason=data["choices"][0].get("finish_reason"),
             generation_tps=(completion_tokens / (latency_ms / 1000)) if latency_ms else None,
         )

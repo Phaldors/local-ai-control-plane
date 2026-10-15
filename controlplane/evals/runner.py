@@ -32,7 +32,11 @@ def _percentile(values: list[float], pct: float) -> float | None:
 
 
 def run_cases(
-    client: LLMClient, model: str, cases: list[GoldenCase], max_tokens: int = 1024
+    client: LLMClient,
+    model: str,
+    cases: list[GoldenCase],
+    max_tokens: int = 1024,
+    think: bool | None = None,
 ) -> list[CaseOutcome]:
     outcomes = []
     for case in cases:
@@ -42,6 +46,7 @@ def run_cases(
             response_schema=case.response_schema,
             tools=case.tools,
             max_tokens=max_tokens,
+            think=think,
         )
         try:
             result = client.chat(request)
@@ -99,12 +104,17 @@ def summarize(cases: list[GoldenCase], outcomes: list[CaseOutcome]) -> dict:
     return tasks
 
 
+def _ms(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.0f} ms"
+
+
 def render_markdown(meta: dict, tasks: dict) -> str:
     lines = [
         f"# Eval run {meta['run_id']}",
         "",
         f"- runtime: `{meta['runtime']}`, model: `{meta['model']}`",
         f"- suite: `{meta['suite']}` ({meta['case_count']} cases, split `{meta['split']}`)",
+        f"- max_tokens: {meta['max_tokens']}, think: {meta['think']}",
         f"- commit: `{meta['commit']}`, host: {meta['host']}",
         "",
     ]
@@ -113,7 +123,8 @@ def render_markdown(meta: dict, tasks: dict) -> str:
             f"## {task}",
             "",
             f"- pass rate: **{s['passed']}/{s['cases']} ({s['pass_rate']:.0%})**",
-            f"- latency p50/p95: {s['latency_ms_p50']} / {s['latency_ms_p95']} ms",
+            f"- latency p50/p95: {_ms(s['latency_ms_p50'])} / {_ms(s['latency_ms_p95'])}",
+            f"- completion tokens (mean): {s['completion_tokens_mean']:.0f}",
         ]
         if task == "extraction":
             lines.append(
@@ -137,6 +148,8 @@ def run_eval(
     suite: str,
     split: str,
     out_root: Path,
+    max_tokens: int = 1024,
+    think: bool | None = None,
 ) -> Path:
     run_id = (
         datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -145,7 +158,7 @@ def run_eval(
     run_dir = out_root / run_id
     traced = TracedClient(client, TraceSink(run_dir / "traces.jsonl"), run_id, tag=suite)
 
-    outcomes = run_cases(traced, model, cases)
+    outcomes = run_cases(traced, model, cases, max_tokens=max_tokens, think=think)
     tasks = summarize(cases, outcomes)
     meta = {
         "run_id": run_id,
@@ -153,6 +166,8 @@ def run_eval(
         "model": model,
         "suite": suite,
         "split": split,
+        "max_tokens": max_tokens,
+        "think": think,
         "case_count": len(cases),
         "commit": _git_commit(),
         "host": f"{platform.machine()} / {platform.platform()}",

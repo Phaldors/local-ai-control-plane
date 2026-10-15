@@ -38,9 +38,16 @@ class CaseOutcome(BaseModel):
     completion_tokens: int = 0
 
 
-EXTRACTION_FAILURES = ("transport_error", "invalid_json", "schema_invalid", "wrong_value")
+EXTRACTION_FAILURES = (
+    "transport_error",
+    "truncated",
+    "invalid_json",
+    "schema_invalid",
+    "wrong_value",
+)
 TOOL_CALL_FAILURES = (
     "transport_error",
+    "truncated",
     "no_call",
     "unexpected_call",
     "hallucinated_tool",
