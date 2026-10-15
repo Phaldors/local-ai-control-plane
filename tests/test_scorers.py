@@ -1,0 +1,136 @@
+from controlplane.evals.contract import GoldenCase
+from controlplane.evals.scorers import score_extraction, score_tool_call
+from controlplane.types import ChatResult, Message, ToolCall, ToolSpec
+
+WEATHER = ToolSpec(
+    name="get_weather",
+    description="weather",
+    parameters={
+        "type": "object",
+        "properties": {"city": {"type": "string"}},
+        "required": ["city"],
+        "additionalProperties": False,
+    },
+)
+CALC = ToolSpec(
+    name="calculator",
+    description="calc",
+    parameters={
+        "type": "object",
+        "properties": {"expression": {"type": "string"}},
+        "required": ["expression"],
+    },
+)
+
+
+def result(text: str = "", calls: list[ToolCall] | None = None) -> ChatResult:
+    return ChatResult(runtime="fake", model="m", text=text, tool_calls=calls or [], latency_ms=10.0)
+
+
+def tool_case(tool: str | None, args: dict | None = None) -> GoldenCase:
+    return GoldenCase(
+        id="c",
+        task="tool_call",
+        messages=[Message(role="user", content="x")],
+        tools=[WEATHER, CALC],
+        expected={"tool": tool, "arguments": args or {}},
+    )
+
+
+EXTRACTION_SCHEMA = {
+    "type": "object",
+    "properties": {"total_price": {"type": ["string", "null"]}},
+    "required": ["total_price"],
+}
+
+
+def extraction_case() -> GoldenCase:
+    return GoldenCase(
+        id="e",
+        task="extraction",
+        messages=[Message(role="user", content="x")],
+        response_schema=EXTRACTION_SCHEMA,
+        expected={"total_price": "45,500"},
+    )
+
+
+def test_extraction_pass_normalizes_amounts():
+    outcome = score_extraction(extraction_case(), result('{"total_price": "45500"}'))
+    assert outcome.passed
+
+
+def test_extraction_invalid_json_is_classified():
+    outcome = score_extraction(extraction_case(), result("Sure! {total_price: 1}"))
+    assert outcome.failure == "invalid_json"
+
+
+def test_extraction_fenced_json_is_not_silently_accepted():
+    outcome = score_extraction(extraction_case(), result('```json\n{"total_price": "1"}\n```'))
+    assert outcome.failure == "invalid_json"
+
+
+def test_extraction_schema_violation():
+    outcome = score_extraction(extraction_case(), result('{"other": 1}'))
+    assert outcome.failure == "schema_invalid"
+
+
+def test_extraction_wrong_value_reports_fields():
+    outcome = score_extraction(extraction_case(), result('{"total_price": "99,000"}'))
+    assert outcome.failure == "wrong_value"
+    assert outcome.detail["fields"] == {"total_price": False}
+
+
+def test_tool_call_pass():
+    case = tool_case("get_weather", {"city": "Istanbul"})
+    out = score_tool_call(
+        case, result(calls=[ToolCall(name="get_weather", arguments={"city": "istanbul"})])
+    )
+    assert out.passed
+
+
+def test_tool_call_no_call():
+    out = score_tool_call(tool_case("get_weather", {"city": "X"}), result("It is sunny."))
+    assert out.failure == "no_call"
+
+
+def test_tool_call_unexpected_call():
+    out = score_tool_call(
+        tool_case(None), result(calls=[ToolCall(name="get_weather", arguments={"city": "X"})])
+    )
+    assert out.failure == "unexpected_call"
+
+
+def test_tool_call_correct_abstention():
+    assert score_tool_call(tool_case(None), result("Hello!")).passed
+
+
+def test_tool_call_hallucinated_tool():
+    out = score_tool_call(
+        tool_case("get_weather", {"city": "X"}),
+        result(calls=[ToolCall(name="send_email", arguments={})]),
+    )
+    assert out.failure == "hallucinated_tool"
+
+
+def test_tool_call_wrong_tool():
+    out = score_tool_call(
+        tool_case("get_weather", {"city": "X"}),
+        result(calls=[ToolCall(name="calculator", arguments={"expression": "1+1"})]),
+    )
+    assert out.failure == "wrong_tool"
+
+
+def test_tool_call_bad_args_schema():
+    out = score_tool_call(
+        tool_case("get_weather", {"city": "X"}),
+        result(calls=[ToolCall(name="get_weather", arguments={"town": "X"})]),
+    )
+    assert out.failure == "bad_args_schema"
+
+
+def test_tool_call_wrong_args():
+    out = score_tool_call(
+        tool_case("get_weather", {"city": "Ankara"}),
+        result(calls=[ToolCall(name="get_weather", arguments={"city": "Izmir"})]),
+    )
+    assert out.failure == "wrong_args"
