@@ -28,7 +28,7 @@ Ollama ve MLX-LM üstünde birden fazla yerel modeli servis eden, ölçen ve
 - [x] M3b Daha zor görev (çok fişli extraction, 2-16 fiş): güçlü modeller doygun, router yine gerekçelendirilmedi (docs/findings-m3.md)
 - [x] M3c Çok adımlı tool-use (agent suite, 29 vaka): gemma4 28/29, Qwen3 18-23/29, yasak iade ve injection ölçüldü; router yine gerekçelendirilmedi (docs/findings-m4.md)
 - [ ] M4 (koşullu, şimdilik askıda) Router: görev tipi + güvene göre kademeli yönlendirme
-- [ ] M5 Güvenlik: PII redaction, allow-list'li tool, prompt-injection eval, human escalation
+- [x] M5 Güvenlik: politika guard'ı, PII redaction, audit, escalation, 21 vakalık güvenlik suite'i; guard kapalı/açık ölçüldü (docs/findings-m5.md)
 - [ ] M6 Yönetişim: audit trail, regression gate, tek sayfalık token/latency paneli
 - [ ] M7 README, rapor, CV, GitHub (`Phaldors/local-ai-control-plane`)
 

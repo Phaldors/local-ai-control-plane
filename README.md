@@ -4,7 +4,8 @@ Measure local LLMs the way you would before trusting them with private data.
 One `LLMClient` interface in front of **Ollama** and **MLX-LM**, every call traced,
 and a golden eval contract that reports failures instead of hiding them.
 
-Status: **M1-M3 done** (two runtimes, tracing, four golden suites, agent loop with trajectory scoring). Router, safety layer and
+Status: **M1-M5 done** (two runtimes, tracing, five golden suites, agent loop with trajectory scoring,
+security guard with PII redaction, audit log and human escalation). Router, safety layer and
 dashboard are deliberately not started: the router only gets built if the measurements justify it.
 
 ## What is here
@@ -41,3 +42,7 @@ easy tool-call set, no RAM measurement, no variance estimate) are listed in
 
 Later findings: [multi-receipt ladder](docs/findings-m3.md) and [multi-step tool use](docs/findings-m4.md)
 (gemma4:26b 28/29 vs Qwen3 models 18-23/29, including unsafe refunds). Router is still not justified by the data.
+
+Security ([findings](docs/findings-m5.md)): a code-level policy guard took executed violations and data leaks
+from 4-11 per model to 0 on a 21-case suite, without blocking legitimate calls; instructing the model in the
+prompt did not prevent cross-customer access.

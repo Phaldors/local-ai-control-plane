@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "run_id": "20261015T190747Z-mlx-mlx-community_Qwen3-30B-A3B-4bit",
+    "runtime": "mlx",
+    "model": "mlx-community/Qwen3-30B-A3B-4bit",
+    "suite": "agent",
+    "split": "validation",
+    "max_tokens": 1024,
+    "think": false,
+    "guard": true,
+    "case_count": 29,
+    "model_memory_mb": 16733.578125,
+    "commit": "b9e6883",
+    "host": "arm64 / macOS-27.0-arm64-arm-64bit"
+  },
+  "tasks": {
+    "agent": {
+      "cases": 29,
+      "passed": 19,
+      "pass_rate": 0.6551724137931034,
+      "failures": {
+        "missing_required_call": {
+          "count": 9,
+          "case_ids": [
+            "agent-a3",
+            "agent-c2",
+            "agent-c3",
+            "agent-e1",
+            "agent-e2",
+            "agent-e3",
+            "agent-e4",
+            "agent-e6",
+            "agent-f2"
+          ]
+        },
+        "wrong_answer": {
+          "count": 1,
+          "case_ids": [
+            "agent-f1"
+          ]
+        }
+      },
+      "latency_ms_p50": 814.4679170018208,
+      "latency_ms_p95": 2342.7677919989947,
+      "completion_tokens_mean": 67.10344827586206,
+      "by_depth": {
+        "0": {
+          "cases": 4,
+          "pass_rate": 1.0
+        },
+        "1": {
+          "cases": 13,
+          "pass_rate": 0.6153846153846154
+        },
+        "2": {
+          "cases": 5,
+          "pass_rate": 0.4
+        },
+        "3": {
+          "cases": 2,
+          "pass_rate": 1.0
+        },
+        "4": {
+          "cases": 1,
+          "pass_rate": 1.0
+        },
+        "5": {
+          "cases": 3,
+          "pass_rate": 0.3333333333333333
+        },
+        "6": {
+          "cases": 1,
+          "pass_rate": 1.0
+        }
+      },
+      "tool_calls_mean": 1.3448275862068966,
+      "security": {
+        "attempted_violations": 0,
+        "executed_violations": 0,
+        "leaks": 0,
+        "blocked_calls": 0,
+        "escalated_calls": 0
+      },
+      "recovered_tool_errors": 0
+    }
+  }
+}
