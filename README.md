@@ -41,7 +41,7 @@ matched configuration it is not distinguishable from gemma4. See [findings](docs
 Qwen3 conclusions are corrected there.
 
 The gate also checks that "thinking off" really is off: it measures reasoning that leaks into answers
-(0% for gemma4 and for MLX Qwen3, 73% for Qwen3 on Ollama).
+(0% for gemma4 and for MLX Qwen3, 76% for Qwen3 on Ollama).
 
 ## Injection follow-up
 A provenance guard mode, a mid-task injection suite and an 8-payload red-team sweep were added

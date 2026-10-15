@@ -64,18 +64,18 @@ checked; counts go to the trace (`reasoning_leak`), the run metadata and the mar
 column, and the gate fails when more than 10% of think-off calls leak and the baseline did not (warns when the baseline
 already leaked: the flag is simply not effective for that model/runtime).
 
-Validation of the detector on all existing think-off runs (`python -m scripts.scan_reasoning_leak`):
+Validation of the detector on all think-off runs in `runs/` (`python -m scripts.scan_reasoning_leak`):
 
 | runtime | model | think-off calls | flagged | rate |
 | --- | --- | --- | --- | --- |
 | MLX | Qwen3-30B-A3B-4bit | 638 | 0 | 0% |
 | MLX | Qwen3-8B-4bit | 768 | 0 | 0% |
-| Ollama | gemma4:26b | 1408 | 0 | 0% |
-| Ollama | qwen3:30b-a3b | 336 | 245 | 73% |
+| Ollama | gemma4:26b | 1445 | 0 | 0% |
+| Ollama | qwen3:30b-a3b | 373 | 282 | 76% |
 
-For qwen3:30b-a3b the flags are 100% of calls in every tool-use suite (294 of 295 calls in the agent, security and
-injection suites, 37/37 in tool-call) and 0 in the two schema-constrained extraction suites, where the output format leaves
-no room for prose. Unit tests include normal answers that start with "Okay" (e.g. "Okay, the order is pending.") that
+For qwen3:30b-a3b the flags cover 282 of 283 calls in the tool-use suites (agent, security, injection, tool-call)
+and 0 of 90 in the two schema-constrained extraction suites, where the output format leaves no room for prose. The
+counts include the two live-check runs below. Unit tests include normal answers that start with "Okay" (e.g. "Okay, the order is pending.") that
 must not be flagged. Live check: a fresh gemma4 tool-call run is 0/37 and passes the gate; the same suite on
 qwen3:30b-a3b is 37/37, scores 35/37 (accuracy hardly changes) and **fails** the gate with `config.reasoning_leak`
 plus latency 2242 vs 491 ms and tokens 55 -> 245. The check therefore catches a cost/label mismatch that accuracy
