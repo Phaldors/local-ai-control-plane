@@ -40,3 +40,8 @@ Prompts, golden sets and scorers are identical across runtimes. Reports: `docs/e
 Not justified yet. Evidence so far: for this task thinking-off gemma4 is both fastest and
 best. A router needs at least two models that trade quality against cost on a clean golden
 set; that needs the label audit and a third model first.
+
+## Data note
+The two `think-default` Ollama reports were generated before commit `1d5441d`, which stopped
+counting `truncated` outputs as valid JSON; their "JSON valid 100%" line is stale. The table
+above uses the corrected definition (recomputed from `outcomes.jsonl`: 35/50 valid).
