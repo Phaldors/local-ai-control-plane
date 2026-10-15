@@ -104,7 +104,7 @@ def test_token_growth_warns():
 def test_baseline_key_and_lookup(tmp_path):
     report = make_report()
     key = baseline_key(report["meta"])
-    assert key == "ollama__gemma4_26b__agent_security__think-off__max1024__guard-off"
+    assert key == "ollama__gemma4_26b__agent_security__think-off__guard-off"
     assert find_baseline(tmp_path, report["meta"]) is None
     (tmp_path / f"{key}.json").write_text("{}")
     assert find_baseline(tmp_path, report["meta"]) == tmp_path / f"{key}.json"
@@ -162,3 +162,29 @@ def test_dashboard_never_embeds_prompts_and_escapes_html(tmp_path):
 
 def test_render_handles_no_runs():
     assert "No security runs" in render([])
+
+
+def test_lowering_max_tokens_is_caught_against_the_same_baseline():
+    base = make_report()
+    lowered = make_report()
+    lowered["meta"]["max_tokens"] = 40
+    assert baseline_key(lowered["meta"]) == baseline_key(base["meta"])
+    result = evaluate(lowered, base)
+    assert result.status == "FAIL" and statuses(result)["config.max_tokens"] == "fail"
+
+
+def test_dashboard_separates_runs_that_differ_only_in_max_tokens(tmp_path):
+    write_run(tmp_path, "20261001T000000Z-a", make_report(passed=19))
+    low = make_report(passed=5)
+    low["meta"]["max_tokens"] = 40
+    write_run(tmp_path, "20261002T000000Z-a", low)
+    runs = load_latest_runs(tmp_path)
+    assert sorted(r["tasks"]["agent"]["passed"] for r in runs) == [5, 19]
+    assert "max 40" in render(runs)
+
+
+def test_dashboard_hides_smoke_runs_and_older_smaller_golden_sets(tmp_path):
+    write_run(tmp_path, "20261001T000000Z-a", make_report(passed=4, cases=5))
+    write_run(tmp_path, "20261002T000000Z-a", make_report(passed=19, cases=21))
+    runs = load_latest_runs(tmp_path)
+    assert [r["tasks"]["agent"]["cases"] for r in runs] == [21]

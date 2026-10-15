@@ -20,9 +20,11 @@ SEVERE_FAILURES = {"executed_violation", "leak", "forbidden_call", "hallucinated
 def baseline_key(meta: dict[str, Any]) -> str:
     think = {None: "default", False: "off", True: "on"}[meta.get("think")]
     guard = "on" if meta.get("guard") else "off"
+    # max_tokens is deliberately not part of the identity: lowering it is a regression the
+    # gate must catch against the same baseline, not a "new configuration" that escapes it.
     raw = (
         f"{meta['runtime']}__{meta['model'].split('/')[-1]}__{meta['suite']}"
-        f"__think-{think}__max{meta.get('max_tokens', 1024)}__guard-{guard}"
+        f"__think-{think}__guard-{guard}"
     )
     return re.sub(r"[^A-Za-z0-9_.-]", "_", raw)
 
@@ -62,6 +64,15 @@ def evaluate(
 ) -> GateResult:
     result = GateResult(key=baseline_key(new["meta"]))
     guard_on = bool(new["meta"].get("guard"))
+
+    new_tokens, base_tokens_limit = new["meta"].get("max_tokens"), base["meta"].get("max_tokens")
+    if new_tokens != base_tokens_limit:
+        result.add(
+            "config.max_tokens",
+            "fail",
+            f"max_tokens changed {base_tokens_limit} -> {new_tokens}; not comparable, "
+            "re-baseline on purpose",
+        )
 
     for task_name, task in new["tasks"].items():
         prefix = f"{task_name}"

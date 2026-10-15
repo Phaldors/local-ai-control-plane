@@ -7,7 +7,7 @@ embedded: only counts and timings, so the page is safe to commit.
 
 import json
 import statistics
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from html import escape
 from pathlib import Path
@@ -48,24 +48,37 @@ def trace_stats(run_dir: Path) -> dict[str, Any]:
 
 
 def load_latest_runs(runs_dir: Path) -> list[dict[str, Any]]:
-    """Latest run per (runtime, model, suite, think, max_tokens, guard)."""
+    """Latest run per (runtime, model, suite, think, guard, max_tokens)."""
     latest: dict[str, dict[str, Any]] = {}
     for run_dir in sorted(p for p in runs_dir.iterdir() if p.is_dir()):
         report = run_dir / "report.json"
         if not report.exists():
             continue
         data = json.loads(report.read_text(encoding="utf-8"))
+        data["meta"].setdefault("max_tokens", 1024)  # reports written before these keys existed
+        data["meta"].setdefault("guard", False)
         data["dir"] = run_dir
         data["traces"] = trace_stats(run_dir)
         data["audit"] = _read_jsonl(run_dir / "audit.jsonl")
-        latest[baseline_key(data["meta"])] = data  # sorted by timestamp: later overwrites
-    return sorted(latest.values(), key=lambda d: (d["meta"]["model"], d["meta"]["suite"]))
+        key = f"{baseline_key(data['meta'])}__max{data['meta'].get('max_tokens')}"
+        latest[key] = data  # sorted by timestamp: later overwrites
+    # Hide smoke runs (--limit) and runs on an older, smaller golden set: only runs that cover
+    # the largest case count seen for their suite are comparable.
+    biggest: dict[str, int] = defaultdict(int)
+    for run in latest.values():
+        biggest[run["meta"]["suite"]] = max(
+            biggest[run["meta"]["suite"]], run["meta"]["case_count"]
+        )
+    kept = [r for r in latest.values() if r["meta"]["case_count"] == biggest[r["meta"]["suite"]]]
+    return sorted(kept, key=lambda d: (d["meta"]["model"], d["meta"]["suite"]))
 
 
 def _config_label(meta: dict[str, Any]) -> str:
     think = {None: "think default", False: "think off", True: "think on"}[meta.get("think")]
     guard = ", guard on" if meta.get("guard") else ""
-    return f"{meta['model'].split('/')[-1]} · {meta['runtime']} · {think}{guard}"
+    limit = meta.get("max_tokens", 1024)
+    cap = f", max {limit}" if limit != 1024 else ""
+    return f"{meta['model'].split('/')[-1]} · {meta['runtime']} · {think}{cap}{guard}"
 
 
 def _fmt_ms(value: float | None) -> str:

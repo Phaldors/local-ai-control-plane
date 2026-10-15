@@ -4,7 +4,7 @@ Measure local LLMs the way you would before trusting them with private data.
 One `LLMClient` interface in front of **Ollama** and **MLX-LM**, every call traced,
 and a golden eval contract that reports failures instead of hiding them.
 
-Status: **M1-M5 done** (two runtimes, tracing, five golden suites, agent loop with trajectory scoring,
+Status: **M1-M6 done** (two runtimes, tracing, five golden suites, agent loop with trajectory scoring,
 security guard with PII redaction, audit log and human escalation). Router, safety layer and
 dashboard are deliberately not started: the router only gets built if the measurements justify it.
 
@@ -27,6 +27,14 @@ uv run python -m controlplane.cli eval --runtime ollama --model gemma4:26b --sui
 uv run mlx_lm.server --model mlx-community/Qwen3-8B-4bit --port 8080
 uv run python -m controlplane.cli eval --runtime mlx --model mlx-community/Qwen3-8B-4bit --suite all
 ```
+
+## Governance
+```bash
+uv run python -m controlplane.cli baseline-save runs/<run_dir>   # commit the result in baselines/
+uv run python -m controlplane.cli gate runs/<run_dir>            # exit 1 on regression
+uv run python -m controlplane.cli dashboard                      # writes docs/dashboard.html
+```
+Details and a deliberate-regression demo: [docs/findings-m6.md](docs/findings-m6.md).
 
 ## First findings (MacBook Pro M5 Pro, 48 GB, validation split, single run)
 | runtime / model | thinking | extraction | tool-call | p50 latency |
