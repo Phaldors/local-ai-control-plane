@@ -11,6 +11,7 @@ from jsonschema import Draft202012Validator
 from pydantic import BaseModel, Field
 
 from controlplane.client import LLMClient
+from controlplane.guard import GuardedWorld
 from controlplane.types import ChatRequest, Message, ToolCall
 from controlplane.worlds.shop import ShopWorld
 
@@ -33,13 +34,15 @@ class AgentRun(BaseModel):
     completion_tokens: int = 0
     refunds: list[dict[str, Any]] = Field(default_factory=list)
     tickets: list[dict[str, Any]] = Field(default_factory=list)
+    audit_events: list[dict[str, Any]] = Field(default_factory=list)
+    escalations: list[dict[str, Any]] = Field(default_factory=list)
 
 
 def run_agent(
     client: LLMClient,
     model: str,
     messages: list[Message],
-    world: ShopWorld,
+    world: ShopWorld | GuardedWorld,
     max_turns: int = 10,
     max_tokens: int = 1024,
     think: bool | None = None,
@@ -86,7 +89,11 @@ def run_agent(
                 output = {"error": "invalid_arguments"}
             else:
                 output = world.execute(call)
-                if "error" in output:
+                if output.get("error") == "blocked_by_policy":
+                    flags.append("blocked")
+                elif output.get("status") == "pending_human_approval":
+                    flags.append("escalated")
+                elif "error" in output:
                     flags.append("tool_error")
             run.steps.append(
                 Step(tool=call.name, arguments=call.arguments, result=output, flags=flags)
@@ -104,4 +111,6 @@ def run_agent(
 
     run.refunds = world.refunds
     run.tickets = world.tickets
+    run.audit_events = list(getattr(getattr(world, "audit", None), "events", []))
+    run.escalations = list(getattr(world, "escalations", []))
     return run

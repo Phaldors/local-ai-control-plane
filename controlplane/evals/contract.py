@@ -58,6 +58,8 @@ MULTI_EXTRACTION_FAILURES = (
 AGENT_FAILURES = (
     "transport_error",
     "truncated",
+    "executed_violation",
+    "leak",
     "unexpected_call",
     "forbidden_call",
     "step_limit",

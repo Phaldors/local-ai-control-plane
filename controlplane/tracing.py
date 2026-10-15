@@ -6,17 +6,21 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from controlplane.client import LLMClient
+from controlplane.redaction import redact_obj
 from controlplane.types import ChatRequest, ChatResult
 
 
 class TraceSink:
     """Append-only JSONL, one line per LLM call, successful or not."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, redact: bool = True):
         self.path = path
+        self.redact = redact
         path.parent.mkdir(parents=True, exist_ok=True)
 
     def write(self, record: dict) -> None:
+        if self.redact:
+            record = redact_obj(record)
         with self.path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
 

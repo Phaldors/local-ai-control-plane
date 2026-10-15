@@ -11,7 +11,9 @@ from controlplane.client import LLMClient
 from controlplane.evals.agent_scorer import score_agent
 from controlplane.evals.contract import CaseOutcome, GoldenCase
 from controlplane.evals.scorers import SCORERS
+from controlplane.guard import GuardedWorld, PolicyGuard
 from controlplane.memory import runtime_memory_mb
+from controlplane.redaction import redact_obj
 from controlplane.tracing import TracedClient, TraceSink
 from controlplane.types import ChatRequest, RuntimeError_
 from controlplane.worlds.shop import ShopWorld
@@ -35,17 +37,25 @@ def _percentile(values: list[float], pct: float) -> float | None:
     return ordered[index]
 
 
+def make_world(case: GoldenCase, guard: bool) -> ShopWorld | GuardedWorld:
+    world = ShopWorld()
+    if not guard:
+        return world
+    return GuardedWorld(world, PolicyGuard(auth_customer_id=case.expected.get("auth_customer")))
+
+
 def run_cases(
     client: LLMClient,
     model: str,
     cases: list[GoldenCase],
     max_tokens: int = 1024,
     think: bool | None = None,
+    guard: bool = False,
 ) -> list[CaseOutcome]:
     outcomes = []
     for case in cases:
         if case.task == "agent":
-            world = ShopWorld()
+            world = make_world(case, guard)
             try:
                 run = run_agent(
                     client,
@@ -146,6 +156,14 @@ def summarize(cases: list[GoldenCase], outcomes: list[CaseOutcome]) -> dict:
             summary["tool_calls_mean"] = statistics.fmean(
                 i.detail.get("tool_calls", 0) for i in items
             )
+            sec = [i.detail.get("security", {}) for i in items]
+            summary["security"] = {
+                "attempted_violations": sum(len(x.get("attempted", [])) for x in sec),
+                "executed_violations": sum(len(x.get("executed", [])) for x in sec),
+                "leaks": sum(len(x.get("leaks", [])) for x in sec),
+                "blocked_calls": sum(x.get("blocked", 0) for x in sec),
+                "escalated_calls": sum(x.get("escalated", 0) for x in sec),
+            }
             summary["recovered_tool_errors"] = sum(
                 1 for i in items if i.passed and i.detail.get("flags", {}).get("tool_error")
             )
@@ -180,7 +198,7 @@ def render_markdown(meta: dict, tasks: dict) -> str:
         "",
         f"- runtime: `{meta['runtime']}`, model: `{meta['model']}`",
         f"- suite: `{meta['suite']}` ({meta['case_count']} cases, split `{meta['split']}`)",
-        f"- max_tokens: {meta['max_tokens']}, think: {meta['think']}",
+        f"- max_tokens: {meta['max_tokens']}, think: {meta['think']}, guard: {meta['guard']}",
         f"- resident model memory (approx): {_mb(meta['model_memory_mb'])}",
         f"- commit: `{meta['commit']}`, host: {meta['host']}",
         "",
@@ -203,6 +221,12 @@ def render_markdown(meta: dict, tasks: dict) -> str:
             lines.append(
                 f"- mean tool calls: {s['tool_calls_mean']:.1f}, "
                 f"passed after recovering from a tool error: {s['recovered_tool_errors']}"
+            )
+            sec = s["security"]
+            lines.append(
+                f"- security: attempted violations {sec['attempted_violations']}, "
+                f"executed {sec['executed_violations']}, leaks {sec['leaks']}, "
+                f"blocked calls {sec['blocked_calls']}, escalated {sec['escalated_calls']}"
             )
             for n, info in s["by_depth"].items():
                 lines.append(f"- depth {n}: pass {info['pass_rate']:.0%} ({info['cases']} cases)")
@@ -230,6 +254,7 @@ def run_eval(
     out_root: Path,
     max_tokens: int = 1024,
     think: bool | None = None,
+    guard: bool = False,
 ) -> Path:
     run_id = (
         datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -238,7 +263,7 @@ def run_eval(
     run_dir = out_root / run_id
     traced = TracedClient(client, TraceSink(run_dir / "traces.jsonl"), run_id, tag=suite)
 
-    outcomes = run_cases(traced, model, cases, max_tokens=max_tokens, think=think)
+    outcomes = run_cases(traced, model, cases, max_tokens=max_tokens, think=think, guard=guard)
     tasks = summarize(cases, outcomes)
     meta = {
         "run_id": run_id,
@@ -248,13 +273,16 @@ def run_eval(
         "split": split,
         "max_tokens": max_tokens,
         "think": think,
+        "guard": guard,
         "case_count": len(cases),
         "model_memory_mb": runtime_memory_mb(client.runtime, model),
         "commit": _git_commit(),
         "host": f"{platform.machine()} / {platform.platform()}",
     }
     (run_dir / "outcomes.jsonl").write_text(
-        "\n".join(o.model_dump_json() for o in outcomes) + "\n", encoding="utf-8"
+        "\n".join(json.dumps(redact_obj(o.model_dump()), ensure_ascii=False) for o in outcomes)
+        + "\n",
+        encoding="utf-8",
     )
     (run_dir / "report.json").write_text(
         json.dumps({"meta": meta, "tasks": tasks}, indent=2, ensure_ascii=False), encoding="utf-8"

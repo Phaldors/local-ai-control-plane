@@ -12,6 +12,7 @@ SUITES = {
     "tool_call": Path("golden/tool_call.jsonl"),
     "multi_extraction": Path("golden/multi_extraction.jsonl"),
     "agent": Path("golden/agent.jsonl"),
+    "agent_security": Path("golden/agent_security.jsonl"),
 }
 
 
@@ -34,6 +35,7 @@ def main() -> None:
     ev.add_argument("--limit", type=int, default=None)
     ev.add_argument("--max-tokens", type=int, default=1024)
     ev.add_argument("--think", choices=["default", "on", "off"], default="default")
+    ev.add_argument("--guard", choices=["off", "on"], default="off")
     ev.add_argument("--base-url", default=None)
     ev.add_argument("--out", type=Path, default=Path("runs"))
     args = parser.parse_args()
@@ -49,7 +51,15 @@ def main() -> None:
             cases = cases[: args.limit]
         think = {"default": None, "on": True, "off": False}[args.think]
         run_dir = run_eval(
-            client, args.model, cases, name, args.split, args.out, args.max_tokens, think
+            client,
+            args.model,
+            cases,
+            name,
+            args.split,
+            args.out,
+            args.max_tokens,
+            think,
+            guard=args.guard == "on",
         )
         print(f"{name}: {run_dir}")
         print((run_dir / "report.md").read_text())
