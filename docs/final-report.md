@@ -78,5 +78,5 @@ generalizing**; the held ones are the claims about the **system design** (guard,
   regression, one-shot test split) found and corrected real mistakes in its own process, documented in
   `docs/findings-m*.md`.
 - gemma4:26b with thinking off is the most accurate of the three local models on every suite. It is not the
-  fastest on agent tasks: Qwen3-30B-A3B answered in about 0.8 s p50 against 1.1 s (it is 5-6 cases less accurate on
+  fastest on agent tasks: Qwen3-30B-A3B answered in about 0.8 s p50 against 1.1 s (it is 5 cases less accurate on
   the 14-case security suite and misses more required calls).
