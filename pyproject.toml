@@ -18,6 +18,10 @@ dev = [
 build = [
     "datasets>=4.0.0",
 ]
+# Serves MLX models via `mlx_lm.server`. The runtime client itself needs no mlx import.
+mlx = [
+    "mlx-lm>=0.28.0",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
