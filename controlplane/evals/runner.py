@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from controlplane.agent import run_agent
+from controlplane.audit import AuditLog
 from controlplane.client import LLMClient
 from controlplane.evals.agent_scorer import score_agent
 from controlplane.evals.contract import CaseOutcome, GoldenCase
@@ -37,11 +38,18 @@ def _percentile(values: list[float], pct: float) -> float | None:
     return ordered[index]
 
 
-def make_world(case: GoldenCase, guard: bool) -> ShopWorld | GuardedWorld:
+def make_world(
+    case: GoldenCase, guard: bool, audit: AuditLog | None = None
+) -> ShopWorld | GuardedWorld:
     world = ShopWorld()
     if not guard:
         return world
-    return GuardedWorld(world, PolicyGuard(auth_customer_id=case.expected.get("auth_customer")))
+    return GuardedWorld(
+        world,
+        PolicyGuard(auth_customer_id=case.expected.get("auth_customer")),
+        audit=audit,
+        case_id=case.id,
+    )
 
 
 def run_cases(
@@ -51,11 +59,12 @@ def run_cases(
     max_tokens: int = 1024,
     think: bool | None = None,
     guard: bool = False,
+    audit: AuditLog | None = None,
 ) -> list[CaseOutcome]:
     outcomes = []
     for case in cases:
         if case.task == "agent":
-            world = make_world(case, guard)
+            world = make_world(case, guard, audit)
             try:
                 run = run_agent(
                     client,
@@ -124,6 +133,9 @@ def summarize(cases: list[GoldenCase], outcomes: list[CaseOutcome]) -> dict:
             "latency_ms_p50": _percentile(latencies, 0.5),
             "latency_ms_p95": _percentile(latencies, 0.95),
             "completion_tokens_mean": statistics.fmean(i.completion_tokens for i in items),
+            "prompt_tokens_total": sum(i.prompt_tokens for i in items),
+            "completion_tokens_total": sum(i.completion_tokens for i in items),
+            "latency_ms_total": sum(i.latency_ms for i in items),
         }
         if task == "extraction":
             fields: dict[str, list[bool]] = defaultdict(list)
@@ -263,7 +275,10 @@ def run_eval(
     run_dir = out_root / run_id
     traced = TracedClient(client, TraceSink(run_dir / "traces.jsonl"), run_id, tag=suite)
 
-    outcomes = run_cases(traced, model, cases, max_tokens=max_tokens, think=think, guard=guard)
+    audit = AuditLog(run_dir / "audit.jsonl") if guard else None
+    outcomes = run_cases(
+        traced, model, cases, max_tokens=max_tokens, think=think, guard=guard, audit=audit
+    )
     tasks = summarize(cases, outcomes)
     meta = {
         "run_id": run_id,

@@ -117,7 +117,14 @@ class PolicyGuard:
 class GuardedWorld:
     """Same interface as ShopWorld; every call passes the guard and is audited."""
 
-    def __init__(self, inner: ShopWorld, guard: PolicyGuard, audit: AuditLog | None = None):
+    def __init__(
+        self,
+        inner: ShopWorld,
+        guard: PolicyGuard,
+        audit: AuditLog | None = None,
+        case_id: str | None = None,
+    ):
+        self.case_id = case_id
         self.inner = inner
         self.guard = guard
         self.audit = audit or AuditLog()
@@ -137,7 +144,11 @@ class GuardedWorld:
     def execute(self, call: ToolCall) -> dict[str, Any]:
         decision = self.guard.check(call, self.inner)
         self.audit.record(
-            tool=call.name, arguments=call.arguments, decision=decision.action, rule=decision.rule
+            case_id=self.case_id,
+            tool=call.name,
+            arguments=call.arguments,
+            decision=decision.action,
+            rule=decision.rule,
         )
         if decision.action == "block":
             return {"error": "blocked_by_policy", "rule": decision.rule, "message": decision.reason}

@@ -1,9 +1,12 @@
 import argparse
+import shutil
 from pathlib import Path
 
 from controlplane.client import LLMClient
+from controlplane.dashboard import build_dashboard
 from controlplane.evals.contract import load_cases
 from controlplane.evals.runner import run_eval
+from controlplane.gate import baseline_key, evaluate, find_baseline, load_report
 from controlplane.runtimes.mlx import MLXClient
 from controlplane.runtimes.ollama import OllamaClient
 
@@ -24,6 +27,30 @@ def build_client(runtime: str, base_url: str | None) -> LLMClient:
     raise SystemExit(f"unknown runtime: {runtime}")
 
 
+def _report_path(path: Path) -> Path:
+    return path / "report.json" if path.is_dir() else path
+
+
+def run_gate(reports: list[Path], baselines: Path, tolerance: int) -> int:
+    """0 = all PASS/WARN, 1 = at least one FAIL, 2 = a baseline is missing."""
+    code = 0
+    for path in map(_report_path, reports):
+        new = load_report(path)
+        baseline_path = find_baseline(baselines, new["meta"])
+        if baseline_path is None:
+            print(f"NO BASELINE  {baseline_key(new['meta'])}  (run baseline-save first)")
+            code = max(code, 2)
+            continue
+        result = evaluate(new, load_report(baseline_path), case_tolerance=tolerance)
+        print(f"{result.status}  {result.key}")
+        for check in result.checks:
+            if check.status != "pass":
+                print(f"   [{check.status}] {check.name}: {check.message}")
+        if result.status == "FAIL":
+            code = max(code, 1)
+    return code
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="controlplane")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -38,7 +65,32 @@ def main() -> None:
     ev.add_argument("--guard", choices=["off", "on"], default="off")
     ev.add_argument("--base-url", default=None)
     ev.add_argument("--out", type=Path, default=Path("runs"))
+    gate = sub.add_parser(
+        "gate", help="compare run reports with committed baselines (exit 1 on FAIL)"
+    )
+    gate.add_argument("reports", nargs="+", type=Path, help="run directories or report.json files")
+    gate.add_argument("--baselines", type=Path, default=Path("baselines"))
+    gate.add_argument("--tolerance", type=int, default=2, help="allowed pass-count drop in cases")
+    base = sub.add_parser("baseline-save", help="copy run reports into the baselines directory")
+    base.add_argument("reports", nargs="+", type=Path)
+    base.add_argument("--baselines", type=Path, default=Path("baselines"))
+    dash = sub.add_parser("dashboard", help="build the single-page HTML dashboard from runs/")
+    dash.add_argument("--runs", type=Path, default=Path("runs"))
+    dash.add_argument("--out", type=Path, default=Path("docs/dashboard.html"))
     args = parser.parse_args()
+
+    if args.command == "gate":
+        raise SystemExit(run_gate(args.reports, args.baselines, args.tolerance))
+    if args.command == "baseline-save":
+        for path in map(_report_path, args.reports):
+            args.baselines.mkdir(parents=True, exist_ok=True)
+            target = args.baselines / f"{baseline_key(load_report(path)['meta'])}.json"
+            shutil.copy(path, target)
+            print(f"saved {target}")
+        return
+    if args.command == "dashboard":
+        print(build_dashboard(args.runs, args.out))
+        return
 
     if args.split == "test":
         print("WARNING: test split is for the final frozen report only.")
