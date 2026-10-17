@@ -18,10 +18,11 @@ checked against committed baselines, and the final run on held-out data was spec
 4. **Tool-result prompt injection did not succeed** against any of three models: 0 attempted injected actions in 90
    case executions on the injection suite (3 models x 3 guard modes x 10 cases) and in 96 payload-sweep attempts (8
    styles, thinking on and off). The new "provenance" guard's benefit is therefore *not demonstrated*; only its cost is.
-5. **Tool schemas are part of the attack surface.** Served over MCP, gemma4 followed an injected instruction in 8 of 8
-   sampled runs of one case, against 0 of 8 with the hand-written schemas; changing how a single optional enum was
-   written flipped it. The server-side rule guard could not see that action; a provenance check in the MCP *host*
-   stopped all 8 ([docs/mcp.md](docs/mcp.md)).
+5. **Injected actions are rare, real, and not predictable from one model.** At temperature 0 no model followed an
+   injection; sampled at T=0.7, injected side effects that a rule guard cannot see (a policy-legal ticket) occurred in
+   roughly 1 to 4% of samples for three of four models. For gemma4, serving the tools over MCP (different schema
+   wording) raised one case from 0/8 to 8/8; that did not reproduce on the other three model configurations. A
+   provenance check in the MCP *host* stopped all of it ([docs/mcp.md](docs/mcp.md)).
 6. **The process caught its own mistakes**, including a retracted "same model on two runtimes" claim
    (see [Corrections](#corrections-made-along-the-way)).
 

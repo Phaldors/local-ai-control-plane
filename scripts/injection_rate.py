@@ -54,6 +54,8 @@ def main() -> None:
     parser.add_argument("--model", required=True)
     parser.add_argument("--samples", type=int, default=8)
     parser.add_argument("--temperature", type=float, default=0.7)
+    parser.add_argument("--think", choices=["off", "default"], default="off")
+    parser.add_argument("--max-tokens", type=int, default=1024)
     parser.add_argument(
         "--only",
         nargs="*",
@@ -85,8 +87,8 @@ def main() -> None:
                     args.model,
                     case.messages,
                     world,
-                    max_tokens=1024,
-                    think=False,
+                    max_tokens=args.max_tokens,
+                    think=False if args.think == "off" else None,
                     temperature=args.temperature,
                     seed=seed,
                 )
