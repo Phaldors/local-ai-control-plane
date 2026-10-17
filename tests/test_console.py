@@ -198,3 +198,84 @@ def test_the_model_cannot_reach_the_console_from_the_mcp_surface():
     names = {s.name for s in ShopWorld.specs}
     assert not any(w in n for n in names for w in ("approve", "reject", "decide"))
     assert "console_api" not in open(mcp_server.__file__).read()
+
+
+def test_context_is_stored_redacted_and_shrunk(store):
+    long_note = "x" * 900
+    esc = store.create(
+        "create_ticket",
+        {"title": "t", "priority": "high"},
+        "ungrounded_ticket",
+        "r",
+        "host",
+        context=[
+            {
+                "tool": "get_order",
+                "arguments": {"order_id": "O-1011"},
+                "result": {"customer_note": long_note, "contact": "alice@example.com"},
+            },
+        ],
+    )
+    item = store.get(esc.id).context[0]
+    assert item["tool"] == "get_order"
+    assert len(item["result"]["customer_note"]) < 500 and item["result"]["customer_note"].endswith(
+        "…"
+    )
+    assert "alice@example.com" not in str(item)
+
+
+def test_a_queue_created_before_context_existed_is_migrated(tmp_path):
+    db = tmp_path / "old.db"
+    raw = sqlite3.connect(db)
+    raw.executescript(
+        "CREATE TABLE escalations (id TEXT PRIMARY KEY, created_at TEXT NOT NULL,"
+        " tool TEXT NOT NULL, arguments TEXT NOT NULL, rule TEXT NOT NULL, reason TEXT NOT NULL,"
+        " source TEXT NOT NULL, user_request TEXT, case_id TEXT,"
+        " status TEXT NOT NULL DEFAULT 'pending');"
+        "INSERT INTO escalations VALUES ('ESC-0001','2026-10-01T00:00:00+00:00','issue_refund',"
+        "'{\"order_id\":\"O-1\",\"amount\":5}','high_value_refund','r','server',NULL,NULL,'pending');"
+    )
+    raw.commit()
+    raw.close()
+    migrated = EscalationStore(db)
+    assert migrated.get("ESC-0001").context == []
+    new = migrated.create(
+        "issue_refund", {"order_id": "O-2", "amount": 9}, "r", "r", "host", context=[{"tool": "x"}]
+    )
+    assert migrated.get(new.id).context == [{"tool": "x"}]
+
+
+def test_server_and_host_attach_what_the_assistant_had_just_read(store):
+    world = GuardedWorld(ShopWorld(), PolicyGuard(), store=store)
+    world.execute(ToolCall(name="get_order", arguments={"order_id": "O-1011"}))
+    world.execute(ToolCall(name="issue_refund", arguments={"order_id": "O-1008", "amount": 503}))
+    server_ctx = store.get("ESC-0001").context
+    assert [c["tool"] for c in server_ctx] == ["get_order"]
+    assert "customer_note" in server_ctx[0]["result"]
+
+    from controlplane.mcp_client import McpWorld
+
+    host = McpWorld(GuardedWorld(ShopWorld(), PolicyGuard()), host_provenance=True, store=store)
+    try:
+        host.observe_user("What is in order O-1011?")
+        host.execute(ToolCall(name="get_order", arguments={"order_id": "O-1011"}))
+        host.execute(ToolCall(name="create_ticket", arguments={"title": "x", "priority": "high"}))
+    finally:
+        host.close()
+    ctx = store.get("ESC-0002").context
+    assert ctx[-1]["tool"] == "get_order" and "customer_note" in ctx[-1]["result"]
+
+
+def test_api_exposes_order_facts_for_refunds_and_none_for_tickets(client, store):
+    refund = hold_refund(store, order="O-1008")
+    ticket = store.create(
+        "create_ticket", {"title": "t", "priority": "high"}, "ungrounded_ticket", "r", "host"
+    )
+    facts = client.get(f"/api/escalations/{refund.id}", headers=AUTH).json()["facts"]
+    assert facts["order_found"] and facts["total"] == 503.0 and facts["status"] == "delivered"
+    assert facts["items"] == ["2 x Monitor", "1 x Desk Lamp"]
+    assert client.get(f"/api/escalations/{ticket.id}", headers=AUTH).json()["facts"] is None
+    unknown = hold_refund(store, order="O-9999")
+    assert client.get(f"/api/escalations/{unknown.id}", headers=AUTH).json()["facts"] == {
+        "order_found": False
+    }

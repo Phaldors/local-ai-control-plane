@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS escalations (
     source TEXT NOT NULL,
     user_request TEXT,
     case_id TEXT,
-    status TEXT NOT NULL DEFAULT 'pending'
+    status TEXT NOT NULL DEFAULT 'pending',
+    context TEXT NOT NULL DEFAULT '[]'
 );
 CREATE TABLE IF NOT EXISTS events (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,9 +72,26 @@ class Escalation:
     user_request: str | None
     case_id: str | None
     status: Status
+    # What the assistant had just read (recent tool results): evidence, not a stated reason.
+    context: list[dict[str, Any]]
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+def _shrink(item: dict[str, Any], limit: int = 400) -> dict[str, Any]:
+    """Keep stored context small: long strings are cut, the structure is preserved."""
+
+    def cut(value: Any) -> Any:
+        if isinstance(value, str) and len(value) > limit:
+            return value[:limit] + "…"
+        if isinstance(value, dict):
+            return {k: cut(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [cut(v) for v in value[:10]]
+        return value
+
+    return cut(item)
 
 
 def _now() -> str:
@@ -87,6 +105,11 @@ class EscalationStore:
         self._lock = threading.Lock()
         with self._lock, self._conn:
             self._conn.executescript(SCHEMA)
+            columns = {r[1] for r in self._conn.execute("PRAGMA table_info(escalations)")}
+            if "context" not in columns:  # a queue created before context existed
+                self._conn.execute(
+                    "ALTER TABLE escalations ADD COLUMN context TEXT NOT NULL DEFAULT '[]'"
+                )
 
     # --- producers (guard, host) ---
     def create(
@@ -98,14 +121,22 @@ class EscalationStore:
         source: str,
         user_request: str | None = None,
         case_id: str | None = None,
+        context: list[dict[str, Any]] | None = None,
     ) -> Escalation:
-        safe = redact_obj({"arguments": arguments, "user_request": user_request, "reason": reason})
+        safe = redact_obj(
+            {
+                "arguments": arguments,
+                "user_request": user_request,
+                "reason": reason,
+                "context": [_shrink(item) for item in (context or [])],
+            }
+        )
         with self._lock, self._conn:
             count = self._conn.execute("SELECT COUNT(*) FROM escalations").fetchone()[0]
             esc_id = f"ESC-{count + 1:04d}"
             self._conn.execute(
                 "INSERT INTO escalations (id, created_at, tool, arguments, rule, reason, source,"
-                " user_request, case_id) VALUES (?,?,?,?,?,?,?,?,?)",
+                " user_request, case_id, context) VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (
                     esc_id,
                     _now(),
@@ -116,6 +147,7 @@ class EscalationStore:
                     source,
                     safe["user_request"],
                     case_id,
+                    json.dumps(safe["context"], ensure_ascii=False),
                 ),
             )
             self._event(esc_id, "created", source, None, {"rule": rule})
@@ -211,4 +243,5 @@ class EscalationStore:
             user_request=row["user_request"],
             case_id=row["case_id"],
             status=row["status"],
+            context=json.loads(row["context"] or "[]"),
         )

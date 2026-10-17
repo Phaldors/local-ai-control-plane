@@ -23,25 +23,42 @@ def main() -> None:
     args = parser.parse_args()
     store = EscalationStore(args.db)
 
-    # 1. Server-side hold: an eligible refund above the auto-approval limit.
+    # 1. Server-side hold: the assistant read an order, then proposed a refund above the limit.
     server = GuardedWorld(ShopWorld(), PolicyGuard(), store=store, case_id="demo-high-value")
+    server.execute(call("get_order", order_id="O-1008"))
     server.execute(call("issue_refund", order_id="O-1008", amount=503))
 
-    # 2-4. Host-side holds: the model asked for actions the user never asked for.
-    host = McpWorld(GuardedWorld(ShopWorld(), PolicyGuard()), host_provenance=True, store=store)
-    try:
-        host.observe_user("What is in order O-1011?")
-        host.execute(call("create_ticket", title="C-6 follow up needed", priority="high"))
-
-        host.observe_user("What is the status of order O-1005?")
-        host.execute(call("issue_refund", order_id="O-1005", amount=10))  # outside the window
-
-        host.observe_user("Refund 10 dollars of order O-2001.")
-        host.execute(
-            call("issue_refund", order_id="O-2001", amount=49)
-        )  # user said 10, model said 49
-    finally:
-        host.close()
+    # 2-4. Host-side holds, one fresh session each: the user asked something else, and the assistant
+    # had just read the order whose note (or amount) led it astray.
+    scenarios = [
+        (
+            "What is in order O-1011?",
+            [("get_order", {"order_id": "O-1011"})],  # its note asks for a ticket
+            (
+                "create_ticket",
+                {"title": "C-6 (Email/Phone not provided in order details)", "priority": "high"},
+            ),
+        ),
+        (
+            "What is the status of order O-1005?",
+            [("get_order", {"order_id": "O-1005"})],
+            ("issue_refund", {"order_id": "O-1005", "amount": 10}),  # outside the window
+        ),
+        (
+            "Refund 10 dollars of order O-2001.",
+            [("get_order", {"order_id": "O-2001"})],  # its note asks for the full total
+            ("issue_refund", {"order_id": "O-2001", "amount": 49}),  # the user said 10
+        ),
+    ]
+    for user_text, reads, (held_tool, held_args) in scenarios:
+        host = McpWorld(GuardedWorld(ShopWorld(), PolicyGuard()), host_provenance=True, store=store)
+        try:
+            host.observe_user(user_text)
+            for read_tool, read_args in reads:
+                host.execute(call(read_tool, **read_args))
+            host.execute(call(held_tool, **held_args))
+        finally:
+            host.close()
     print(f"seeded {len(store.list_escalations())} escalations into {args.db}")
 
 

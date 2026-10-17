@@ -6,7 +6,7 @@ repo is public: `github.com/Phaldors/local-ai-control-plane`, branch `main`, tag
 
 ## State (2026-10-16)
 The project is **technically complete and documented**. All milestones are done except two deliberate non-goals
-(router, CV wording). 130 Python tests and 21 frontend tests pass, `ruff` is clean, CI is green. Nothing is half-done in the working tree.
+(router, CV wording). 134 Python tests and 38 frontend tests pass, `ruff` is clean, CI is green. Nothing is half-done in the working tree.
 What exists: two runtimes behind one `LLMClient`, JSONL tracing, six golden suites, an agent loop over a deterministic
 fake shop, a policy guard with PII redaction, audit log and human escalation, an independent security oracle, a
 regression gate with committed baselines, a one-page dashboard, a reasoning-leak check, a one-shot test-split protocol

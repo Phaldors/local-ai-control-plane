@@ -57,6 +57,7 @@ def create_app(
 
     def view(escalation: Escalation) -> dict[str, Any]:
         item = escalation.as_dict()
+        item["facts"] = office.facts(escalation)
         if escalation.status == "pending":
             refusal = office.check(escalation)
             item["approvable"] = refusal is None

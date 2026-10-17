@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { Api } from './api'
 import { RuleBadge, SourceBadge, StatusBadge } from './Badges'
-import { describeAction } from './format'
+import { EvidenceBanner, OrderFacts, ReadLog } from './EvidencePanel'
+import { explain } from './explain'
 import { ReviewPanel } from './ReviewPanel'
 import { usePolling } from './usePolling'
 
@@ -26,7 +27,11 @@ export function EscalationDetailView({ api, id, reviewer, onDecided, onAuthError
       const executed = outcome.result
       setMessage({
         kind: 'ok',
-        text: executed ? (executed.executed ? 'Approved and executed.' : `Approved, but not executed: ${executed.message ?? 'see log'}`) : 'Rejected.',
+        text: executed
+          ? executed.executed
+            ? 'Approved and executed.'
+            : `Approved, but not executed: ${executed.message ?? 'see log'}`
+          : 'Rejected.',
       })
       reload()
       onDecided()
@@ -42,10 +47,12 @@ export function EscalationDetailView({ api, id, reviewer, onDecided, onAuthError
   if (error && !data) return <p role="alert" className="error">Could not load {id}: {error.message}</p>
   if (!data) return <p className="empty">Loading…</p>
 
+  const story = explain(data)
+
   return (
     <article className="detail" aria-label={`Escalation ${data.id}`}>
       <header>
-        <h2>{describeAction(data)}</h2>
+        <h2>{story.headline}</h2>
         <div className="card-badges">
           <StatusBadge status={data.status} />
           <RuleBadge rule={data.rule} />
@@ -53,16 +60,35 @@ export function EscalationDetailView({ api, id, reviewer, onDecided, onAuthError
         </div>
       </header>
 
-      <dl className="facts">
-        <dt>Why it was held</dt>
-        <dd>{data.reason}</dd>
-        <dt>What the user asked</dt>
-        <dd>{data.user_request ?? <em>Not available: the server holding this action never sees the user's messages.</em>}</dd>
-        <dt>Proposed call</dt>
+      <dl className="story">
+        <dt>What you asked</dt>
         <dd>
-          <pre>{`${data.tool}(${JSON.stringify(data.arguments, null, 2)})`}</pre>
+          {story.asked ? (
+            <q>{story.asked}</q>
+          ) : (
+            <em>Not available: the server holding this action never sees the user's messages.</em>
+          )}
         </dd>
+        <dt>What the assistant wants to do</dt>
+        <dd>
+          <strong>{story.wants}</strong>
+        </dd>
+        <dt>Why it was held</dt>
+        <dd>{story.why}</dd>
       </dl>
+
+      <EvidenceBanner escalation={data} />
+      <OrderFacts escalation={data} />
+      <ReadLog escalation={data} />
+
+      <section className="outcomes" aria-label="Outcomes">
+        <p>
+          <strong>If you approve:</strong> {story.ifApprove}
+        </p>
+        <p>
+          <strong>If you reject:</strong> {story.ifReject}
+        </p>
+      </section>
 
       {message && (
         <p role={message.kind === 'error' ? 'alert' : 'status'} className={message.kind === 'error' ? 'error' : 'ok'}>
@@ -79,6 +105,14 @@ export function EscalationDetailView({ api, id, reviewer, onDecided, onAuthError
           onReject={(reason) => void decide(() => api.reject(id, reviewer.trim(), reason))}
         />
       )}
+
+      <details className="technical">
+        <summary>Technical details</summary>
+        <p>
+          Rule: <code>{data.rule}</code> ({data.reason})
+        </p>
+        <pre>{`${data.tool}(${JSON.stringify(data.arguments, null, 2)})`}</pre>
+      </details>
 
       <h3>History</h3>
       <ol className="timeline" aria-label="History">

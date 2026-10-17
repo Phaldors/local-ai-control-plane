@@ -13,6 +13,7 @@ entered and exited by the same task).
 import asyncio
 import json
 import threading
+from collections import deque
 from concurrent.futures import Future
 from typing import Any
 
@@ -39,6 +40,7 @@ class McpWorld:
         self.store = store
         self._provenance = PolicyGuard(provenance=True)
         self._user_text = ""
+        self._recent: deque[dict[str, Any]] = deque(maxlen=3)
         self.host_escalations: list[dict[str, Any]] = []
         self.name = f"{inner.name}+mcp"
         self.system_prompt = inner.system_prompt
@@ -91,6 +93,7 @@ class McpWorld:
                         held.reason,
                         source="host",
                         user_request=self._user_text or None,
+                        context=list(self._recent),
                     ).id
                 return {
                     "status": "pending_human_approval",
@@ -99,7 +102,9 @@ class McpWorld:
                 }
         future: Future[dict[str, Any]] = Future()
         self._loop.call_soon_threadsafe(self._queue.put_nowait, (call, future))  # type: ignore[union-attr]
-        return future.result(timeout=120)
+        result = future.result(timeout=120)
+        self._recent.append({"tool": call.name, "arguments": call.arguments, "result": result})
+        return result
 
     def close(self) -> None:
         if self._thread.is_alive():

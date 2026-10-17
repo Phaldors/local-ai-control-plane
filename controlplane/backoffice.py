@@ -10,7 +10,7 @@ from typing import Any
 from controlplane.escalations import Escalation
 from controlplane.guard import PolicyGuard
 from controlplane.types import ToolCall
-from controlplane.worlds.shop import ShopWorld
+from controlplane.worlds.shop import ORDERS, PRODUCTS, ShopWorld
 
 EXECUTABLE = {"issue_refund", "create_ticket"}
 
@@ -20,6 +20,29 @@ class BackOffice:
         self.world = world or ShopWorld()
         # A human has approved the high-value part; every other rule is still enforced.
         self._guard = PolicyGuard(escalate_refund_over=float("inf"))
+
+    def facts(self, escalation: Escalation) -> dict[str, Any] | None:
+        """Backend facts a reviewer needs to judge the action (None when there are none to show)."""
+        if escalation.tool != "issue_refund":
+            return None
+        order = ORDERS.get(str(escalation.arguments.get("order_id")))
+        if order is None:
+            return {"order_found": False}
+        total = round(sum(PRODUCTS[sku]["price"] * qty for sku, qty in order["items"]), 2)
+        already = sum(
+            r["amount"]
+            for r in self.world.refunds
+            if r["order_id"] == escalation.arguments.get("order_id")
+        )
+        return {
+            "order_found": True,
+            "status": order["status"],
+            "placed": order["placed"],
+            "delivered": order.get("delivered"),
+            "total": total,
+            "already_refunded": already,
+            "items": [f"{qty} x {PRODUCTS[sku]['name']}" for sku, qty in order["items"]],
+        }
 
     def check(self, escalation: Escalation) -> dict[str, Any] | None:
         """None if the action may be executed, otherwise why not."""

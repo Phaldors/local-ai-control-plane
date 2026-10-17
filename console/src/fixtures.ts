@@ -16,6 +16,8 @@ export function escalation(over: Partial<Escalation> = {}): Escalation {
     approvable: true,
     blocked_by: null,
     blocked_message: null,
+    context: [],
+    facts: null,
     ...over,
   }
 }

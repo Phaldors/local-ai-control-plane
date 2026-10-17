@@ -1,5 +1,21 @@
 export type Status = 'pending' | 'approved' | 'rejected'
 
+export interface ContextItem {
+  tool: string
+  arguments: Record<string, unknown>
+  result: Record<string, unknown>
+}
+
+export interface OrderFacts {
+  order_found: boolean
+  status?: string
+  placed?: string
+  delivered?: string | null
+  total?: number
+  already_refunded?: number
+  items?: string[]
+}
+
 export interface Escalation {
   id: string
   created_at: string
@@ -16,6 +32,10 @@ export interface Escalation {
   approvable: boolean
   blocked_by: string | null
   blocked_message: string | null
+  /** What the assistant had just read (recent tool results): evidence, not a stated reason. */
+  context: ContextItem[]
+  /** Backend facts about the order for refunds, null for other actions. */
+  facts: OrderFacts | null
 }
 
 export interface EscalationEvent {

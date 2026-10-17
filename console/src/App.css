@@ -70,3 +70,19 @@ pre { margin: 0; padding: 8px; background: var(--bg); border-radius: 6px; overfl
 .audit { width: 100%; border-collapse: collapse; font-size: .85rem; }
 .audit th, .audit td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .login { max-width: 420px; margin: 12vh auto; padding: 0 16px; }
+.story { display: grid; grid-template-columns: 190px 1fr; gap: 10px 14px; margin: 16px 0; }
+.story dt { color: var(--muted); font-size: .85rem; }
+.story dd { margin: 0; }
+.story q { font-style: italic; }
+@media (max-width: 560px) { .story { grid-template-columns: 1fr; } }
+.evidence { border: 1px solid var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 8px; padding: 10px 14px; margin: 12px 0; }
+.evidence p { margin: 4px 0 8px; color: var(--muted); font-size: .88rem; }
+.evidence blockquote { margin: 8px 0 0; padding: 6px 12px; border-left: 3px solid var(--warn); }
+.evidence footer { color: var(--muted); font-size: .8rem; margin-top: 4px; }
+.order-facts p { margin: 2px 0; }
+.muted { color: var(--muted); }
+.outcomes { margin: 14px 0; padding: 10px 14px; background: var(--bg); border-radius: 8px; }
+.outcomes p { margin: 4px 0; }
+details { margin: 10px 0; }
+details summary { cursor: pointer; color: var(--muted); font-size: .88rem; }
+.read-log ol { padding-left: 18px; }

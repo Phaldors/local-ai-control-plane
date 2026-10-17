@@ -110,8 +110,8 @@ addresses); the leak detector matches English reasoning openers only; model and 
 
 ## Reproduce
 ```bash
-uv sync --group mcp --group console && uv run pytest && uv run ruff check .     # 130 tests
-(cd console && pnpm install && pnpm typecheck && pnpm test && pnpm build)          # 21 tests
+uv sync --group mcp --group console && uv run pytest && uv run ruff check .     # 134 tests
+(cd console && pnpm install && pnpm typecheck && pnpm test && pnpm build)          # 38 tests
 uv run python -m controlplane.cli eval --runtime ollama --model gemma4:26b --suite all --think off
 # MLX: uv sync --group mlx; uv run mlx_lm.server --model mlx-community/Qwen3-8B-4bit --port 8080
 uv run python -m controlplane.cli eval --runtime mlx --model mlx-community/Qwen3-8B-4bit --suite agent_security --guard on

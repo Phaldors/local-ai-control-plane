@@ -6,6 +6,7 @@ anything the model or a tool result says.
 """
 
 import re
+from collections import deque
 from dataclasses import dataclass
 from datetime import date
 from typing import TYPE_CHECKING, Any, Literal
@@ -175,6 +176,7 @@ class GuardedWorld:
         self.audit = audit or AuditLog()
         self.escalations: list[dict[str, Any]] = []
         self.user_text = ""
+        self._recent: deque[dict[str, Any]] = deque(maxlen=3)
         self.name = inner.name + "+guard"
         self.specs = inner.specs
         self.system_prompt = inner.system_prompt
@@ -214,10 +216,13 @@ class GuardedWorld:
                     source="server",
                     user_request=self.user_text or None,
                     case_id=self.case_id,
+                    context=list(self._recent),
                 ).id
             return {
                 "status": "pending_human_approval",
                 "escalation_id": escalation_id,
                 "message": "A human reviewer must approve this action; it has not been executed.",
             }
-        return self.inner.execute(call)
+        result = self.inner.execute(call)
+        self._recent.append({"tool": call.name, "arguments": call.arguments, "result": result})
+        return result
