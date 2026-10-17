@@ -5,6 +5,7 @@ import subprocess
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from controlplane.agent import run_agent
 from controlplane.audit import AuditLog
@@ -13,12 +14,14 @@ from controlplane.evals.agent_scorer import score_agent
 from controlplane.evals.contract import CaseOutcome, GoldenCase
 from controlplane.evals.scorers import SCORERS
 from controlplane.guard import GuardedWorld, PolicyGuard
-from controlplane.mcp_client import McpWorld
 from controlplane.memory import runtime_memory_mb
 from controlplane.redaction import redact_obj
 from controlplane.tracing import TracedClient, TraceSink
 from controlplane.types import ChatRequest, RuntimeError_
 from controlplane.worlds.shop import ShopWorld
+
+if TYPE_CHECKING:
+    from controlplane.mcp_client import McpWorld
 
 
 def _git_commit() -> str | None:
@@ -51,7 +54,7 @@ def make_world(
     guard: bool | str,
     audit: AuditLog | None = None,
     transport: str = "direct",
-) -> ShopWorld | GuardedWorld | McpWorld:
+) -> "ShopWorld | GuardedWorld | McpWorld":
     world: ShopWorld | GuardedWorld = ShopWorld()
     mode = guard_mode(guard)
     # Behind MCP the server runs the rule guard; provenance needs the user's words, which only the
@@ -68,6 +71,9 @@ def make_world(
             case_id=case.id,
         )
     if transport == "mcp":
+        # imported here so the core evals do not need the optional `mcp` dependency group
+        from controlplane.mcp_client import McpWorld
+
         return McpWorld(world, host_provenance=mode == "provenance")
     return world
 

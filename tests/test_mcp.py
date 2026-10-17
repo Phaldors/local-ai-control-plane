@@ -4,6 +4,8 @@ import sys
 
 import pytest
 
+pytest.importorskip("mcp", reason="needs the optional mcp dependency group")
+
 from controlplane.agent import run_agent
 from controlplane.evals.agent_scorer import score_agent
 from controlplane.evals.contract import GoldenCase
