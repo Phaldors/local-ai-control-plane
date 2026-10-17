@@ -22,6 +22,7 @@ if measurements justify it.
 - [x] M7a final: one-shot test-split run with pre-registered expectations
 - [x] M8 provenance guard mode, mid-task injection suite, red-team sweep (null result)
 - [x] Runtime/checkpoint confound: retracted claim corrected, same-checkpoint comparison, leak check in the gate
+- [x] M9 MCP: server-side guarded tool server, suites over the protocol, host-side provenance, schema-presentation finding (docs/mcp.md)
 - [ ] M7b CV and LinkedIn wording: on hold until Arda asks
 - [ ] M4 router: deliberately not built
 

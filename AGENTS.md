@@ -6,11 +6,18 @@ repo is public: `github.com/Phaldors/local-ai-control-plane`, branch `main`, tag
 
 ## State (2026-10-16)
 The project is **technically complete and documented**. All milestones are done except two deliberate non-goals
-(router, CV wording). 104 tests pass, `ruff` is clean, CI is green. Nothing is half-done in the working tree.
+(router, CV wording). 118 tests pass, `ruff` is clean, CI is green. Nothing is half-done in the working tree.
 What exists: two runtimes behind one `LLMClient`, JSONL tracing, six golden suites, an agent loop over a deterministic
 fake shop, a policy guard with PII redaction, audit log and human escalation, an independent security oracle, a
 regression gate with committed baselines, a one-page dashboard, a reasoning-leak check, a one-shot test-split protocol
 that was executed once (see `docs/final-report.md`).
+
+## MCP layer (added 2026-10-17)
+`controlplane/mcp_server.py` serves the shop tools over MCP with the rule guard enforced server-side; `mcp_client.py`'s `McpWorld`
+runs the suites through the protocol (`--transport mcp`). Behind MCP, `--guard provenance` runs in the *host* adapter (the server never
+sees the user's words). Never add an approval tool: escalations are a read-only resource. Install with `uv sync --group mcp`. Findings,
+including that how tool schemas are written changed an injection outcome 0/8 -> 8/8 on one case, are in `docs/mcp.md`. Scripts:
+`scripts/injection_rate.py` (sampled), `scripts/schema_bisect.py`. Evaluate the *served* schemas, not the hand-written ones.
 
 ## Commands
 ```bash
