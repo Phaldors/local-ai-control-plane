@@ -79,6 +79,9 @@ Qwen3 rows on MLX thinking-off; robustness against prompt injection in general (
 - Reasoning models need `max_tokens` around 4096 or they truncate; `think` flags are runtime and checkpoint specific, so
   read `reasoning leak` in reports and tokens per call, not the label.
 - A background monitor that greps only for success stays silent on a crash; include failure signatures.
+- Optional dependency groups (`mcp`, `mlx`, `build`) must never be imported by core modules: a local env with every group
+  installed hid a CI break once. Before pushing, mimic CI with `uv sync && uv run pytest -q` (MCP tests then skip), and
+  restore with `uv sync --group mcp --group mlx --group build`. CI installs `--group mcp`.
 
 ## Open items (all optional, none blocking)
 1. Run the original hybrid on Ollama (`qwen3:30b-a3b-q4_K_M`, 18.6 GB, metadata verified as the hybrid: context 40,960, no
