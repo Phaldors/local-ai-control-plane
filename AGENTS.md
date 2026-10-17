@@ -6,7 +6,7 @@ repo is public: `github.com/Phaldors/local-ai-control-plane`, branch `main`, tag
 
 ## State (2026-10-16)
 The project is **technically complete and documented**. All milestones are done except two deliberate non-goals
-(router, CV wording). 118 tests pass, `ruff` is clean, CI is green. Nothing is half-done in the working tree.
+(router, CV wording). 130 Python tests and 21 frontend tests pass, `ruff` is clean, CI is green. Nothing is half-done in the working tree.
 What exists: two runtimes behind one `LLMClient`, JSONL tracing, six golden suites, an agent loop over a deterministic
 fake shop, a policy guard with PII redaction, audit log and human escalation, an independent security oracle, a
 regression gate with committed baselines, a one-page dashboard, a reasoning-leak check, a one-shot test-split protocol
@@ -19,6 +19,13 @@ sees the user's words). Never add an approval tool: escalations are a read-only 
 including that how tool schemas are written changed an injection outcome 0/8 -> 8/8 on one case for gemma4 (not reproduced on three other
 model configurations; sampled injection rates are ~1-4%, not 0), are in `docs/mcp.md`. Scripts:
 `scripts/injection_rate.py` (sampled), `scripts/schema_bisect.py`. Evaluate the *served* schemas, not the hand-written ones.
+
+## Escalation console (added 2026-10-17)
+`controlplane/escalations.py` (SQLite queue + append-only event log), `backoffice.py` (re-checks hard policy at approval time),
+`console_api.py` (FastAPI, token-protected human channel), `console/` (React + TypeScript, `pnpm`). The model must never reach `decide`:
+it is not an MCP tool and `mcp_server.py` must not import the console (a test enforces it). Install with `uv sync --group console` and
+`make console-install`; demo with `make console-demo` (needs `CONSOLE_TOKEN`). Optional groups stay optional: core modules must not
+import `fastapi` or `mcp`. Details and limits in `docs/console.md`.
 
 ## Commands
 ```bash

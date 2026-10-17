@@ -17,6 +17,7 @@ work happened; later documents correct earlier ones where noted.
 | [findings-runtime-confound.md](findings-runtime-confound.md) | MLX vs Ollama, the retracted "same model" claim, same-checkpoint result, leak check |
 | [same-checkpoint-plan.md](same-checkpoint-plan.md) | The plan for the same-checkpoint comparison, written before the runs |
 | [mcp.md](mcp.md) | MCP server with server-side guard, running the suites over MCP, the schema-presentation finding, host-side provenance |
+| [console.md](console.md) | The human review console: queue, API, React UI, why approval is a separate channel and cannot override policy |
 | [dashboard.html](dashboard.html) | One-page snapshot of the latest run per configuration (open in a browser) |
 | `eval-reports/` | Archived reports and trajectories per stage (PII-redacted) |
 

@@ -23,7 +23,10 @@ checked against committed baselines, and the final run on held-out data was spec
    roughly 1 to 4% of samples for three of four models. For gemma4, serving the tools over MCP (different schema
    wording) raised one case from 0/8 to 8/8; that did not reproduce on the other three model configurations. A
    provenance check in the MCP *host* stopped all of it ([docs/mcp.md](docs/mcp.md)).
-6. **The process caught its own mistakes**, including a retracted "same model on two runtimes" claim
+6. **The human side exists too.** Held actions go to a persistent queue and a TypeScript + React console where a
+   reviewer approves or rejects them over a channel the model cannot reach; approving still cannot override hard
+   policy ([docs/console.md](docs/console.md)).
+7. **The process caught its own mistakes**, including a retracted "same model on two runtimes" claim
    (see [Corrections](#corrections-made-along-the-way)).
 
 ## Final held-out run (one shot, expectations written beforehand)
@@ -64,6 +67,8 @@ golden cases ─► runner ─► agent loop ─► GuardedWorld ─► ShopWorl
   checksum-checked TCKN and IBAN redaction on everything persisted.
 - `controlplane/evals/`: golden case contract, deterministic scorers, trajectory scorer, independent security oracle.
 - `controlplane/gate.py`, `dashboard.py`, `reasoning.py`: regression gate, one-page HTML dashboard, reasoning-leak check.
+- `controlplane/escalations.py`, `backoffice.py`, `console_api.py`, `console/`: the escalation queue (SQLite, append-only log),
+  the review API and the React console (TypeScript, Vite, Vitest).
 - `controlplane/mcp_server.py`, `mcp_client.py`: the shop tools as an MCP server with the guard enforced server-side (no
   approval tool, read-only escalation queue), and an in-process MCP client world so the suites run through the protocol.
 
@@ -105,7 +110,8 @@ addresses); the leak detector matches English reasoning openers only; model and 
 
 ## Reproduce
 ```bash
-uv sync && uv run pytest && uv run ruff check .          # 118 tests
+uv sync --group mcp --group console && uv run pytest && uv run ruff check .     # 130 tests
+(cd console && pnpm install && pnpm typecheck && pnpm test && pnpm build)          # 21 tests
 uv run python -m controlplane.cli eval --runtime ollama --model gemma4:26b --suite all --think off
 # MLX: uv sync --group mlx; uv run mlx_lm.server --model mlx-community/Qwen3-8B-4bit --port 8080
 uv run python -m controlplane.cli eval --runtime mlx --model mlx-community/Qwen3-8B-4bit --suite agent_security --guard on
