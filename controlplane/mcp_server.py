@@ -21,6 +21,7 @@ from typing import Any, Literal
 from mcp.server.mcpserver import MCPServer
 
 from controlplane.audit import AuditLog
+from controlplane.escalations import EscalationStore
 from controlplane.guard import GuardedWorld, PolicyGuard
 from controlplane.types import ToolCall
 from controlplane.worlds.shop import ShopWorld
@@ -100,7 +101,10 @@ def build_server(world: World, name: str = "shop-control-plane") -> MCPServer:
 
 
 def build_world(
-    guard: str = "rules", auth_customer: str | None = None, audit_path: Path | None = None
+    guard: str = "rules",
+    auth_customer: str | None = None,
+    audit_path: Path | None = None,
+    escalation_db: Path | None = None,
 ) -> World:
     inner = ShopWorld()
     if guard == "off":
@@ -109,6 +113,7 @@ def build_world(
         inner,
         PolicyGuard(auth_customer_id=auth_customer),
         audit=AuditLog(audit_path),
+        store=EscalationStore(escalation_db) if escalation_db else None,
     )
 
 
@@ -121,8 +126,11 @@ def main() -> None:
     parser.add_argument(
         "--audit-log", type=Path, default=None, help="append decisions to this JSONL"
     )
+    parser.add_argument(
+        "--escalation-db", type=Path, default=None, help="SQLite queue read by the review console"
+    )
     args = parser.parse_args()
-    world = build_world(args.guard, args.auth_customer, args.audit_log)
+    world = build_world(args.guard, args.auth_customer, args.audit_log, args.escalation_db)
     build_server(world).run()
 
 

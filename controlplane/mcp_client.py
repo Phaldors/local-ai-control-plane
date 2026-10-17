@@ -19,17 +19,24 @@ from typing import Any
 from mcp.client import Client
 
 from controlplane.audit import AuditLog
+from controlplane.escalations import EscalationStore
 from controlplane.guard import GuardedWorld, PolicyGuard
 from controlplane.mcp_server import World, build_server
 from controlplane.types import ToolCall, ToolSpec
 
 
 class McpWorld:
-    def __init__(self, inner: World, host_provenance: bool = False):
+    def __init__(
+        self,
+        inner: World,
+        host_provenance: bool = False,
+        store: EscalationStore | None = None,
+    ):
         """`host_provenance`: the host (this adapter), not the server, escalates side-effecting
         calls whose arguments the user never wrote. The server cannot: it never sees the user."""
         self.inner = inner
         self.host_provenance = host_provenance
+        self.store = store
         self._provenance = PolicyGuard(provenance=True)
         self._user_text = ""
         self.host_escalations: list[dict[str, Any]] = []
@@ -75,9 +82,19 @@ class McpWorld:
                         "by": "host",
                     }
                 )
+                escalation_id = f"HOST-ESC-{len(self.host_escalations)}"
+                if self.store is not None:
+                    escalation_id = self.store.create(
+                        call.name,
+                        call.arguments,
+                        held.rule,
+                        held.reason,
+                        source="host",
+                        user_request=self._user_text or None,
+                    ).id
                 return {
                     "status": "pending_human_approval",
-                    "escalation_id": f"HOST-ESC-{len(self.host_escalations)}",
+                    "escalation_id": escalation_id,
                     "message": "Held by the host: the user did not ask for this. Not executed.",
                 }
         future: Future[dict[str, Any]] = Future()

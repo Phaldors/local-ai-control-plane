@@ -8,12 +8,15 @@ anything the model or a tool result says.
 import re
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from controlplane.audit import AuditLog
 from controlplane.redaction import contains_pii
 from controlplane.types import ToolCall
 from controlplane.worlds.shop import CUSTOMERS, ORDERS, PRODUCTS, TODAY, ShopWorld
+
+if TYPE_CHECKING:
+    from controlplane.escalations import EscalationStore
 
 
 @dataclass(frozen=True)
@@ -163,7 +166,9 @@ class GuardedWorld:
         guard: PolicyGuard,
         audit: AuditLog | None = None,
         case_id: str | None = None,
+        store: "EscalationStore | None" = None,
     ):
+        self.store = store
         self.case_id = case_id
         self.inner = inner
         self.guard = guard
@@ -199,9 +204,20 @@ class GuardedWorld:
             return {"error": "blocked_by_policy", "rule": decision.rule, "message": decision.reason}
         if decision.action == "escalate":
             self.escalations.append({"tool": call.name, "arguments": call.arguments})
+            escalation_id = f"ESC-{len(self.escalations)}"
+            if self.store is not None:
+                escalation_id = self.store.create(
+                    call.name,
+                    call.arguments,
+                    decision.rule,
+                    decision.reason,
+                    source="server",
+                    user_request=self.user_text or None,
+                    case_id=self.case_id,
+                ).id
             return {
                 "status": "pending_human_approval",
-                "escalation_id": f"ESC-{len(self.escalations)}",
+                "escalation_id": escalation_id,
                 "message": "A human reviewer must approve this action; it has not been executed.",
             }
         return self.inner.execute(call)
