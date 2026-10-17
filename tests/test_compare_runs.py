@@ -30,3 +30,30 @@ def test_runs_with_a_different_max_tokens_are_never_compared(tmp_path):
     write_run(tmp_path, "20261002T000000Z-a", 40)  # the deliberate regression demo, newer
     found = latest_runs(tmp_path, "ollama", "m_1")
     assert list(found.values()) == [tmp_path / "20261001T000000Z-a"]
+
+
+def test_spec_parsing_and_transport_filter(tmp_path):
+    from scripts.compare_runs import parse_spec
+
+    assert parse_spec("ollama:gemma4_26b") == ("ollama", "gemma4_26b", "direct")
+    assert parse_spec("ollama:gemma4_26b@mcp") == ("ollama", "gemma4_26b", "mcp")
+    for name, transport in (("20261001T000000Z-a", "direct"), ("20261002T000000Z-a", "mcp")):
+        directory = tmp_path / name
+        directory.mkdir()
+        meta = {
+            "runtime": "ollama",
+            "model": "m:1",
+            "suite": "agent",
+            "think": False,
+            "max_tokens": 1024,
+            "guard": True,
+            "transport": transport,
+            "case_count": 1,
+        }
+        (directory / "report.json").write_text(json.dumps({"meta": meta, "tasks": {}}))
+    assert list(latest_runs(tmp_path, "ollama", "m_1", transport="mcp").values()) == [
+        tmp_path / "20261002T000000Z-a"
+    ]
+    assert list(latest_runs(tmp_path, "ollama", "m_1").values()) == [
+        tmp_path / "20261001T000000Z-a"
+    ]

@@ -54,22 +54,22 @@ def make_world(
 ) -> ShopWorld | GuardedWorld | McpWorld:
     world: ShopWorld | GuardedWorld = ShopWorld()
     mode = guard_mode(guard)
-    if transport == "mcp" and mode == "provenance":
-        raise ValueError(
-            "provenance needs the user's messages, which an MCP server never sees: it cannot be "
-            "enforced behind MCP (use --transport direct)"
-        )
+    # Behind MCP the server runs the rule guard; provenance needs the user's words, which only the
+    # host sees, so it runs in the host adapter instead.
+    server_provenance = mode == "provenance" and transport != "mcp"
     if mode != "off":
         world = GuardedWorld(
             world,
             PolicyGuard(
                 auth_customer_id=case.expected.get("auth_customer"),
-                provenance=mode == "provenance",
+                provenance=server_provenance,
             ),
             audit=audit,
             case_id=case.id,
         )
-    return McpWorld(world) if transport == "mcp" else world
+    if transport == "mcp":
+        return McpWorld(world, host_provenance=mode == "provenance")
+    return world
 
 
 def run_cases(

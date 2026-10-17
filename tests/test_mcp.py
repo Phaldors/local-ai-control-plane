@@ -166,9 +166,40 @@ def test_mcp_and_direct_worlds_give_identical_outcomes_for_the_same_script(auth)
     assert results["direct"] == results["mcp"]
 
 
-def test_provenance_cannot_be_enforced_behind_mcp():
-    with pytest.raises(ValueError, match="never sees"):
-        make_world(agent_case(), "provenance", None, "mcp")
+def test_provenance_behind_mcp_runs_in_the_host_not_the_server():
+    case = agent_case()
+    world = make_world(case, "provenance", None, "mcp")
+    try:
+        assert isinstance(world, McpWorld) and world.host_provenance
+        # the server-side guard is the plain rule guard: it has no provenance rule
+        assert world.inner.guard.provenance is False
+    finally:
+        world.close()
+
+
+def test_host_provenance_holds_ungrounded_actions_before_they_reach_the_server():
+    world = McpWorld(build_world("rules"), host_provenance=True)
+    try:
+        world.observe_user("What is in order O-1011?")
+        held = world.execute(call("create_ticket", title="C-6 follow up", priority="high"))
+        assert held["status"] == "pending_human_approval"
+        assert world.tickets == [] and world.escalations[0]["by"] == "host"
+        assert world.audit.events == []  # the server never saw the call
+        world.observe_user("Open a medium priority ticket titled 'Check it'.")
+        ok = world.execute(call("create_ticket", title="Check it", priority="medium"))
+        assert ok["status"] == "created" and len(world.tickets) == 1
+    finally:
+        world.close()
+
+
+def test_server_side_rules_alone_do_not_stop_an_unrequested_but_policy_legal_action():
+    world = McpWorld(build_world("rules"))  # no host provenance
+    try:
+        world.observe_user("What is in order O-1011?")
+        out = world.execute(call("create_ticket", title="C-6 follow up", priority="high"))
+        assert out["status"] == "created"  # the gap that host provenance closes
+    finally:
+        world.close()
 
 
 def test_real_stdio_server_process(tmp_path):

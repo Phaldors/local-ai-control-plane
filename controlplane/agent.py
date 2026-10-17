@@ -46,6 +46,8 @@ def run_agent(
     max_turns: int = 10,
     max_tokens: int = 1024,
     think: bool | None = None,
+    temperature: float = 0.0,
+    seed: int = 0,
 ) -> AgentRun:
     run = AgentRun()
     if hasattr(world, "observe_user"):
@@ -57,7 +59,13 @@ def run_agent(
     for _ in range(max_turns):
         result = client.chat(
             ChatRequest(
-                model=model, messages=history, tools=world.specs, max_tokens=max_tokens, think=think
+                model=model,
+                messages=history,
+                tools=world.specs,
+                max_tokens=max_tokens,
+                think=think,
+                temperature=temperature,
+                seed=seed,
             )
         )
         run.model_turns += 1

@@ -5,6 +5,7 @@ exact two-sided sign test on the discordant pairs. With few cases the test has l
 non-significant result means "cannot tell", not "equal".
 
 Usage: python -m scripts.compare_runs --a mlx:Qwen3-30B-A3B-4bit --b ollama:qwen3_30b-a3b
+       python -m scripts.compare_runs --a ollama:gemma4_26b --b ollama:gemma4_26b@mcp
 """
 
 import argparse
@@ -22,7 +23,7 @@ def sign_test(only_a: int, only_b: int) -> float:
 
 
 def latest_runs(
-    runs_dir: Path, runtime: str, model_key: str, max_tokens: int = 1024
+    runs_dir: Path, runtime: str, model_key: str, max_tokens: int = 1024, transport: str = "direct"
 ) -> dict[tuple, Path]:
     found: dict[tuple, Path] = {}
     for run in sorted(runs_dir.iterdir()):
@@ -37,15 +38,24 @@ def latest_runs(
             continue
         if meta.get("split", "validation") != "validation":
             continue
+        if meta.get("transport", "direct") != transport:
+            continue
         if meta.get("max_tokens", 1024) != max_tokens:
             continue  # e.g. the deliberate max_tokens=40 regression demo is never comparable
         key = (
             meta["suite"],
-            meta.get("guard_mode", "on" if meta.get("guard") else "off"),
+            meta.get("guard_mode", "rules" if meta.get("guard") else "off"),
             meta.get("think"),
         )
         found[key] = run  # later runs overwrite earlier ones
     return found
+
+
+def parse_spec(spec: str) -> tuple[str, str, str]:
+    """`runtime:model_key[@transport]`; transport defaults to direct (ollama:gemma4_26b@mcp)."""
+    head, _, transport = spec.partition("@")
+    runtime, model_key = head.split(":", 1)
+    return runtime, model_key, transport or "direct"
 
 
 def outcomes(run: Path) -> dict[str, bool]:
@@ -60,10 +70,10 @@ def main() -> None:
     parser.add_argument("--runs", type=Path, default=Path("runs"))
     parser.add_argument("--max-tokens", type=int, default=1024)
     args = parser.parse_args()
-    (rt_a, key_a), (rt_b, key_b) = args.a.split(":", 1), args.b.split(":", 1)
+    (rt_a, key_a, tr_a), (rt_b, key_b, tr_b) = parse_spec(args.a), parse_spec(args.b)
     runs_a, runs_b = (
-        latest_runs(args.runs, rt_a, key_a, args.max_tokens),
-        latest_runs(args.runs, rt_b, key_b, args.max_tokens),
+        latest_runs(args.runs, rt_a, key_a, args.max_tokens, tr_a),
+        latest_runs(args.runs, rt_b, key_b, args.max_tokens, tr_b),
     )
     for key in sorted(set(runs_a) & set(runs_b), key=str):
         a, b = outcomes(runs_a[key]), outcomes(runs_b[key])

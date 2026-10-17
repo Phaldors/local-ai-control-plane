@@ -72,6 +72,10 @@ class PolicyGuard:
                 return ungrounded
         return ALLOW
 
+    def check_provenance(self, call: ToolCall, user_text: str) -> Decision | None:
+        """Only the provenance rule: used by an MCP *host*, which sees the user's words."""
+        return self._ungrounded(call, user_text)
+
     def _ungrounded(self, call: ToolCall, user_text: str) -> Decision | None:
         text, args = user_text.lower(), call.arguments
         if call.name == "issue_refund":

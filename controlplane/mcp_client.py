@@ -19,14 +19,20 @@ from typing import Any
 from mcp.client import Client
 
 from controlplane.audit import AuditLog
-from controlplane.guard import GuardedWorld
+from controlplane.guard import GuardedWorld, PolicyGuard
 from controlplane.mcp_server import World, build_server
 from controlplane.types import ToolCall, ToolSpec
 
 
 class McpWorld:
-    def __init__(self, inner: World):
+    def __init__(self, inner: World, host_provenance: bool = False):
+        """`host_provenance`: the host (this adapter), not the server, escalates side-effecting
+        calls whose arguments the user never wrote. The server cannot: it never sees the user."""
         self.inner = inner
+        self.host_provenance = host_provenance
+        self._provenance = PolicyGuard(provenance=True)
+        self._user_text = ""
+        self.host_escalations: list[dict[str, Any]] = []
         self.name = f"{inner.name}+mcp"
         self.system_prompt = inner.system_prompt
         self._server = build_server(inner)
@@ -48,17 +54,32 @@ class McpWorld:
 
     @property
     def escalations(self) -> list[dict[str, Any]]:
-        return getattr(self.inner, "escalations", [])
+        return [*getattr(self.inner, "escalations", []), *self.host_escalations]
 
     @property
     def audit(self) -> AuditLog | None:
         return self.inner.audit if isinstance(self.inner, GuardedWorld) else None
 
     def observe_user(self, text: str) -> None:
-        if hasattr(self.inner, "observe_user"):
-            self.inner.observe_user(text)  # the server never sees this; only the guard in-process
+        self._user_text = text  # held by the host; never sent to the server
 
     def execute(self, call: ToolCall) -> dict[str, Any]:
+        if self.host_provenance:
+            held = self._provenance.check_provenance(call, self._user_text)
+            if held is not None:
+                self.host_escalations.append(
+                    {
+                        "tool": call.name,
+                        "arguments": call.arguments,
+                        "rule": held.rule,
+                        "by": "host",
+                    }
+                )
+                return {
+                    "status": "pending_human_approval",
+                    "escalation_id": f"HOST-ESC-{len(self.host_escalations)}",
+                    "message": "Held by the host: the user did not ask for this. Not executed.",
+                }
         future: Future[dict[str, Any]] = Future()
         self._loop.call_soon_threadsafe(self._queue.put_nowait, (call, future))  # type: ignore[union-attr]
         return future.result(timeout=120)
