@@ -28,7 +28,9 @@ def baseline_key(meta: dict[str, Any]) -> str:
     split = meta.get("split", "validation")
     raw = (
         f"{meta['runtime']}__{meta['model'].split('/')[-1]}__{meta['suite']}"
-        f"__think-{think}__guard-{guard}" + ("" if split == "validation" else f"__split-{split}")
+        f"__think-{think}__guard-{guard}"
+        + ("" if split == "validation" else f"__split-{split}")
+        + ("__mcp" if meta.get("transport") == "mcp" else "")
     )
     return re.sub(r"[^A-Za-z0-9_.-]", "_", raw)
 

@@ -94,6 +94,12 @@ def main() -> None:
     ev.add_argument("--think", choices=["default", "on", "off"], default="default")
     ev.add_argument("--guard", choices=["off", "on", "provenance"], default="off")
     ev.add_argument(
+        "--transport",
+        choices=["direct", "mcp"],
+        default="direct",
+        help="mcp: run agent suites through an in-process MCP server and client",
+    )
+    ev.add_argument(
         "--confirm-final",
         action="store_true",
         help="required for --split test: acknowledges the configuration is frozen",
@@ -170,6 +176,7 @@ def main() -> None:
             args.max_tokens,
             think,
             guard={"off": False, "on": "rules", "provenance": "provenance"}[args.guard],
+            transport=args.transport,
         )
         print(f"{name}: {run_dir}")
         print((run_dir / "report.md").read_text())

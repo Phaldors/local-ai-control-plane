@@ -13,6 +13,7 @@ from controlplane.evals.agent_scorer import score_agent
 from controlplane.evals.contract import CaseOutcome, GoldenCase
 from controlplane.evals.scorers import SCORERS
 from controlplane.guard import GuardedWorld, PolicyGuard
+from controlplane.mcp_client import McpWorld
 from controlplane.memory import runtime_memory_mb
 from controlplane.redaction import redact_obj
 from controlplane.tracing import TracedClient, TraceSink
@@ -46,20 +47,29 @@ def guard_mode(guard: bool | str) -> str:
 
 
 def make_world(
-    case: GoldenCase, guard: bool | str, audit: AuditLog | None = None
-) -> ShopWorld | GuardedWorld:
-    world = ShopWorld()
+    case: GoldenCase,
+    guard: bool | str,
+    audit: AuditLog | None = None,
+    transport: str = "direct",
+) -> ShopWorld | GuardedWorld | McpWorld:
+    world: ShopWorld | GuardedWorld = ShopWorld()
     mode = guard_mode(guard)
-    if mode == "off":
-        return world
-    return GuardedWorld(
-        world,
-        PolicyGuard(
-            auth_customer_id=case.expected.get("auth_customer"), provenance=mode == "provenance"
-        ),
-        audit=audit,
-        case_id=case.id,
-    )
+    if transport == "mcp" and mode == "provenance":
+        raise ValueError(
+            "provenance needs the user's messages, which an MCP server never sees: it cannot be "
+            "enforced behind MCP (use --transport direct)"
+        )
+    if mode != "off":
+        world = GuardedWorld(
+            world,
+            PolicyGuard(
+                auth_customer_id=case.expected.get("auth_customer"),
+                provenance=mode == "provenance",
+            ),
+            audit=audit,
+            case_id=case.id,
+        )
+    return McpWorld(world) if transport == "mcp" else world
 
 
 def run_cases(
@@ -70,11 +80,12 @@ def run_cases(
     think: bool | None = None,
     guard: bool | str = False,
     audit: AuditLog | None = None,
+    transport: str = "direct",
 ) -> list[CaseOutcome]:
     outcomes = []
     for case in cases:
         if case.task == "agent":
-            world = make_world(case, guard, audit)
+            world = make_world(case, guard, audit, transport)
             try:
                 run = run_agent(
                     client,
@@ -85,7 +96,11 @@ def run_cases(
                     max_tokens=max_tokens,
                     think=think,
                 )
+                if hasattr(world, "close"):
+                    world.close()
             except RuntimeError_ as exc:
+                if hasattr(world, "close"):
+                    world.close()
                 outcomes.append(
                     CaseOutcome(
                         case_id=case.id,
@@ -290,6 +305,7 @@ def run_eval(
     max_tokens: int = 1024,
     think: bool | None = None,
     guard: bool | str = False,
+    transport: str = "direct",
 ) -> Path:
     run_id = (
         datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -300,7 +316,14 @@ def run_eval(
 
     audit = AuditLog(run_dir / "audit.jsonl") if guard_mode(guard) != "off" else None
     outcomes = run_cases(
-        traced, model, cases, max_tokens=max_tokens, think=think, guard=guard, audit=audit
+        traced,
+        model,
+        cases,
+        max_tokens=max_tokens,
+        think=think,
+        guard=guard,
+        audit=audit,
+        transport=transport,
     )
     tasks = summarize(cases, outcomes)
     meta = {
@@ -313,6 +336,7 @@ def run_eval(
         "think": think,
         "guard": guard_mode(guard) != "off",
         "guard_mode": guard_mode(guard),
+        "transport": transport,
         "case_count": len(cases),
         "model_memory_mb": runtime_memory_mb(client.runtime, model),
         "reasoning_leak": {

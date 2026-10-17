@@ -91,6 +91,8 @@ def _config_label(meta: dict[str, Any]) -> str:
     cap = f", max {limit}" if limit != 1024 else ""
     if meta.get("split", "validation") != "validation":
         cap += f", {meta['split']} split"
+    if meta.get("transport") == "mcp":
+        cap += ", via MCP"
     return f"{meta['model'].split('/')[-1]} · {meta['runtime']} · {think}{cap}{guard}"
 
 
